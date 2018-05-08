@@ -69,8 +69,12 @@ class NeuralNetwork(object):
         """
         self.inputs = []
         self.input_size = input_layer_size
+        self.input_labels = []
+        
         self.outputs = []
         self.output_size = output_layer_size
+        self.output_labels = []
+        
         self.hidden = []
         self.const = learning_constant
         self.function = hidden_function_type
@@ -95,7 +99,8 @@ class NeuralNetwork(object):
 
         return: Incremented total node number
         """
-        return self.total_nodes += 1
+        self.total_nodes += 1
+        return self.total_nodes
 
         
     def build_network(self, input_labels, output_labels):
@@ -107,6 +112,9 @@ class NeuralNetwork(object):
         output_labels:
         return: None
         """
+        self.input_labels = input_labels
+        self.output_labels = output_labels
+        
         for i in range(self.output_size):
             self.outputs.append(NeuralNetworkOutputNeuron(output_labels[i - 1],
                                                           self.incn()))
@@ -122,6 +130,39 @@ class NeuralNetwork(object):
                 self.total_connections += 1
 
         return
+
+
+    def build_network_from_genome(self, genome, input_labels, output_labels):
+        """
+        Builds a network from a supplied genome.
+        """
+        self.build_network(input_labels, output_labels)
+
+        connection_dict = {}
+        
+        for connected in self.inputs + self.hidden:
+            if connected.node_id not in connection_dict.keys():
+                connection_dict[connected.node_id] = [connected]
+                
+            for connection in connected.connections:
+                connection_dict[connected.node_id].append(connection)
+        
+        for key in genome.keys():
+            if key[0] not in connection_dict.keys():
+                hidden = NeuralNetworkHiddenNeuron(self.function, key[0])
+                
+                connection_dict[key[0]] = [hidden]
+            
+            if key[1] not in [node.node_id for node in connection_dict[key[0]]]:
+                hidden = None
+                # node does not exist yet
+                if key[1] not in connection_dict.keys():
+                    hidden = NeuralNetworkHiddenNeuron(self.function, key[1])
+                else:
+                    hidden = connection_dict[key[1]][0]
+
+                connection_dict[key[0]][0].add_connection(hidden, 1)
+                connection_dict[key[0]].append(hidden)
 
 
     def feed_forward(self, inputs):
@@ -206,14 +247,33 @@ class NeuralNetwork(object):
             new_connections = {}
             
             for connection in node.connections.keys():
-                new_hidden.add_connection(connection, node.connections[connection])
-                
+                connection_id = (new_hidden.node_id, connection.node_id)
+                new_hidden.add_connection(connection,
+                                          node.connections[connection])
+
+                valid_keys = []
+                for key in self.genome.keys():
+                    if key[1] == connection.node_id:
+                        valid_keys.append(key)
+
+                for gene in valid_keys:
+                    
+                    if connection_id in generation_genome.keys():
+                        new_gene = (generation_genome[key], False)
+                    else:
+                        new_gene = (global_innovation, False)
+                        global_innovation += 1
+                        generation_genome[connection_id] = new_gene
+                        generation_genome[gene] = (generation_genome[gene][0],
+                                                   True)
+
+                    self.genome[gene] = (self.genome[gene][0], True)
+                    
             node.connections = {new_hidden: 1}
 
             self.hidden.append(new_hidden)
 
             # Must update both global and local genomes
-            #
 
             valid_keys = []
             for key in self.genome.keys():
@@ -222,7 +282,7 @@ class NeuralNetwork(object):
                     
             for gene in valid_keys:
                 if gene[0] == node.node_id:
-                    key = (new_hidden.node_id, node.node_id)
+                    key = (node.node_id, new_hidden.node_id)
                     if key in generation_genome.keys():
                         new_gene = (generation_genome[key], False)
                     else:
@@ -263,9 +323,14 @@ class NeuralNetwork(object):
     def breed(self, mate, this_fitness, mate_fitness):
         """
         Breeds two neural networks and returns their child.
+
+        mate:
+        this_fitness:
+        mate_fitness:
+        return: The offspring of the two parent individuals
         """
         child = NeuralNetwork(self.input_size, self.output_size,
-                              hidden_function_type=self.funciton,
+                              hidden_function_type=self.function,
                               learning_constant=self.const,
                               struct_mut_con_rate=self.struct_mut_con_rate,
                               struct_mut_new_rate=self.struct_mut_new_rate,
@@ -282,21 +347,32 @@ class NeuralNetwork(object):
             more_fit = mate
             less_fit = self
 
-        shared = {}
-        disjoint_more = {}
-        disjoint_less = {}
+        shared = []
+        disjoint_more = []
+        disjoint_less = []
 
-        for key in more_fit.keys():
-            if key in less_fit.keys():
+        for key in more_fit.genome.keys():
+            if key in less_fit.genome.keys():
                 shared.append(key)
             else:
                 disjoint_more.append(key)
 
-        for key in less_fit.keys():
-            if key not in more_fit.keys():
+        for key in less_fit.genome.keys():
+            if key not in more_fit.genome.keys():
                 disjoint_less.append(key)
 
-        # sort the three lists by their innovation numbers and combine
+        for key in shared:
+            child_genome[key] = more_fit.genome[key]
+
+        for key in disjoint_more:
+            child_genome[key] = more_fit.genome[key]
+
+        for key in disjoint_less:
+            child_genome[key] = less_fit.genome[key]
+
+        child.build_network_from_genome(child_genome,
+                                        more_fit.input_labels,
+                                        more_fit.output_labels)
 
         return child
 
@@ -328,24 +404,123 @@ class NeuralNetwork(object):
         return True
 
 
+    def fitness(self, time_alive, time_frame):
+        # Compute funciton keeping in mind time alive, time allowed and
+        # penalize individuals that are overly complex.
+        return 1
+
+
+    def print(self):
+        pass
+
+    
 if __name__ == "__main__":
-    nn = NeuralNetwork(3, 2, struct_mut_new_rate=1)
-    nn.build_network(['a', 'b', 'c'], ['p', 'q'])
-    g_innov = nn.innovation_number
-    g_genome = nn.genome
-    
-    a = nn.feed_forward([1, 2, 3])
-    
-    for out in a:
-        print(a[out])
+    import sys
+    sys.path.insert(0, './../')
+    from ga.individual import Individual
+    from ga.evolution import EvolutionaryController
         
-    g_innov = nn.structural_mutation(g_innov, g_genome)
+    class NEATNN(Individual):
 
-    print()
-    a = nn.feed_forward([1, 2, 3])
+        def __init__(self):
+            self.network = None
+            
+        def individual_print(self):
+            return ""
     
-    for out in a:
-        print(a[out])
+    
+        def fitness_function(self):
+            fitness = 0
+            results = [list(self.network.feed_forward(a).values())[0] for a in [[0,0], [0, 1], [1, 0], [1, 1]]]
+            actual = [0, 1, 1, 0]
+            for i in range(len(actual) - 1):
+                fitness += abs(actual[i] - results[i])
 
-    print(nn.genome)
+            return fitness
+    
+    
+        def breed_parents(self, parent_tuple, child, reproduction_constant):
+            child.network = parent_tuple[0][1].network.breed(
+                parent_tuple[1][1].network,
+                parent_tuple[0][0],
+                parent_tuple[1][0]
+            )
+
+            return child
+    
+    
+        def mutate(self, mutation_constant):
+            self.network.structural_mutation(self.network.innovation_number,
+                                     self.network.genome)
+    
+    
+        def generate_random(self):
+            self.network = NeuralNetwork(2, 1, struct_mut_new_rate=1)
+            self.network.build_network(['a', 'b'], ['o'])
+
+    
+    EC = EvolutionaryController(NEATNN)
+    EC.run_evolution(15, 1, 1, printing='full', generation_limit=100)
+    
+    # Back-propogation to do live learning
+
+    # nn1 = NeuralNetwork(3, 2, struct_mut_new_rate=1)
+    # nn2 = NeuralNetwork(3, 2, struct_mut_new_rate=1)
+    # nn1.build_network(['a', 'b', 'c'], ['p', 'q'])
+    # nn2.build_network(['a', 'b', 'c'], ['p', 'q'])
+    # 
+    # nn1.structural_mutation(nn1.innovation_number, nn1.genome)
+    # 
+    # nnc = nn1.breed(nn2, 1, 2)
+    # 
+    # a = nnc.feed_forward([1, 2, 3])
+    # for out in a:
+    #     print(a[out])
+    
+    # nn = NeuralNetwork(3, 2, struct_mut_new_rate=1)
+    # nn.build_network(['a', 'b', 'c'], ['p', 'q'])
+    # g_innov = nn.innovation_number
+    # g_genome = nn.genome
+    # 
+    # a = nn.feed_forward([1, 2, 3])
+    # 
+    # for out in a:
+    #     print(a[out])
+    #     
+    # g_innov = nn.structural_mutation(g_innov, g_genome)
+    # 
+    # print()
+    # a = nn.feed_forward([1, 2, 3])
+    # 
+    # for out in a:
+    #     print(a[out])
+    # 
+    # print(nn.genome)
+
+    # nn = NeuralNetwork(30, 30, struct_mut_new_rate=1)
+    # nn.build_network(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
+    #                   'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
+    #                   't', 'u', 'v', 'w', 'x', 'y', 'z', 'aa', 'ab', 'ac',
+    #                   'ad'],
+    #                  ['ba', 'bb', 'bc', 'bd', 'be', 'bf', 'bg', 'bh', 'bi',
+    #                   'bj', 'bk', 'bl', 'bm', 'bn', 'bo', 'bp', 'bq', 'br', 'bs',
+    #                   'bt', 'bu', 'bv', 'bw', 'bx', 'by', 'bz', 'baa', 'bab', 'bac',
+    #                   'bad'])
+    # g_innov = nn.innovation_number
+    # g_genome = nn.genome
+    # 
+    # a = nn.feed_forward([1 for i in range(29)])
+    # 
+    # for out in a:
+    #     print(a[out])
+    #     
+    # g_innov = nn.structural_mutation(g_innov, g_genome)
+    # 
+    # print()
+    # a = nn.feed_forward([1 for i in range(29)])
+    # 
+    # for out in a:
+    #     print(a[out])
+    # 
+    # print(nn.genome)
     
