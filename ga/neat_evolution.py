@@ -9,7 +9,6 @@ import heapq
 import datetime
 import itertools
 
-
 class EvolutionaryController():
     """
     The EvolutionaryController class is an abstract controller for evolving
@@ -47,7 +46,8 @@ class EvolutionaryController():
             exit(exit_code)
             
 
-    def generate_seed_parents(self, breeding_constant):
+    def generate_seed_parents(self, breeding_constant, generation_genome,
+                              generation_innov):
         """
         Generate a list of random parents for generation 0.
         
@@ -63,10 +63,10 @@ class EvolutionaryController():
         
         for ii in range( breeding_constant * (breeding_constant - 1)// 2 ):
             parent = self.Individual()
-            parent.generate_random()
+            (generation_genome, generation_innov) = parent.generate_random(generation_genome, generation_innov)
             parents.append(parent)
         
-        return parents
+        return (parents, generation_genome, generation_innov)
 
     
     def run_evolution(self, breeding_constant, reproduction_constant,
@@ -91,7 +91,6 @@ class EvolutionaryController():
         collect_data: [ False | True ] Toggle data collection
         printing: [ off | minimal | full ] How much printing should we do.
         """
-
         if maximize:
             optimal_fitness *= -1
         
@@ -102,8 +101,11 @@ class EvolutionaryController():
             # TODO: initialize data collection
             data_map = {}
 
+        generation_genome = {}
+        generation_innov = 0
         generation_id = 0
-        generation = self.generate_seed_parents( breeding_constant )
+        generation = []
+        (generation, generation_genome, generation_innov) = self.generate_seed_parents( breeding_constant, generation_genome, generation_innov )
 
         heap = []
 
@@ -121,19 +123,34 @@ class EvolutionaryController():
 
         while True:
             most_fit = []
+            avg_fit = 0
+            top_fit = heap[0][0]
+            
             for _ in range( breeding_constant ):
-                most_fit.append(heapq.heappop(heap))
+                pop = heapq.heappop(heap)
+                most_fit.append(pop)
+                avg_fit += pop[0]
+                if pop[0] < top_fit:
+                    top_fit = pop[0]
+
+            avg_fit /= breeding_constant
 
             #[print(fit[0], " ", fit[1].string) for fit in most_fit]
             #print()
 
+            if printing == 'full':
+                print("%d : %f : %f" % (generation_id, avg_fit, top_fit))
+
             heap = []
+
+            generation_genome = {}
+            generation_innov = 0
             
             for pair in itertools.combinations(most_fit, 2):
                 new_individual = self.Individual()
-                (pair[0])[1].breed_parents(pair, new_individual,
-                                           reproduction_constant)
-                new_individual.mutate(mutation_constant)
+                (generation_genome, generation_innov) = (pair[0])[1].breed_parents(pair, new_individual,
+                                                                                   reproduction_constant, generation_genome, generation_innov)
+                (generation_genome, generation_innov) = new_individual.mutate(mutation_constant, generation_genome, generation_innov)
             
                 fitness = new_individual.fitness_function()
                 
@@ -149,6 +166,9 @@ class EvolutionaryController():
             if generation_limit is not "inf":
                 if generation_id >= generation_limit:
                     stop_time = datetime.datetime.now() - start_time
+                    if printing is not "off":
+                        print("Stopped in ", stop_time, " seconds on generation %d" % generation_id)
+                        print("Average fitness %f" % avg_fit)
                     return
                 
             if best_fitness <= optimal_fitness:
@@ -158,3 +178,5 @@ class EvolutionaryController():
                     print("Found optimal solution in %d generations in " %
                           generation_id, stop_time, " seconds")
                 return
+
+

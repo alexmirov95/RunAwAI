@@ -19,6 +19,8 @@ from neuron import (
     NeuralNetworkHiddenNeuron
 )
 
+from activation import ActivationFunction
+
 class NEATEvolutionController(object):
     def __init__(self, sample_size):
         self.sample_size = sample_size
@@ -132,7 +134,8 @@ class NeuralNetwork(object):
         return
 
 
-    def build_network_from_genome(self, genome, input_labels, output_labels):
+    def build_network_from_genome(self, genome, input_labels, output_labels,
+                                  connection_weights):
         """
         Builds a network from a supplied genome.
         """
@@ -161,7 +164,8 @@ class NeuralNetwork(object):
                 else:
                     hidden = connection_dict[key[1]][0]
 
-                connection_dict[key[0]][0].add_connection(hidden, 1)
+                connection_dict[key[0]][0].add_connection(hidden,
+                                                          connection_weights[key])
                 connection_dict[key[0]].append(hidden)
 
 
@@ -234,12 +238,28 @@ class NeuralNetwork(object):
         
         return: None
         """
-        # Add a connection or a node
-        if random.uniform(0, 1) < self.struct_mut_con_rate:
-            # If we can add a connection, then do so
-            pass
+        # TODO: Mutate in connections
+        # if random.uniform(0, 1) <= self.struct_mut_con_rate:
+        #     # If we can add a connection, then do so
+        #     connectable_nodes = self.inputs + self.hidden
+        #     node = connected_nodes[random.randint(0, len(connected_nodes) - 1)]
+        #     choice = random.choice(self.hidden + self.outputs)
+        # 
+        #     if choice not in list(node.connections.keys()):
+        #         node.add_connection(choice, random.uniform(-1, 1))
+        # 
+        #         # Add the new connection to the genome
+        #         connection_id = (node.node_id, choice.node_id)
+        #         if connection_id in generation.genome.keys():
+        #             new_gene = (generation_genome[key], False)
+        #         else:
+        #             new_gene = (global_innovation, False)
+        #             global_innovation += 1
+        #             generation_genome[connection_id] = new_gene
+        # 
+       #         self.genome[connection_id] = new_gene
 
-        if random.uniform(0, 1) < self.struct_mut_new_rate:
+        if random.uniform(0, 1) <= self.struct_mut_new_rate:
             connected_nodes = self.inputs + self.hidden
             node = connected_nodes[random.randint(0, len(connected_nodes) - 1)]
             coice = random.choice(list(node.connections.keys()))
@@ -351,6 +371,7 @@ class NeuralNetwork(object):
         disjoint_more = []
         disjoint_less = []
 
+        
         for key in more_fit.genome.keys():
             if key in less_fit.genome.keys():
                 shared.append(key)
@@ -370,9 +391,21 @@ class NeuralNetwork(object):
         for key in disjoint_less:
             child_genome[key] = less_fit.genome[key]
 
+        connection_weights = {} # (a, b): weight
+        for node in mate.inputs + mate.hidden:
+            for connection in node.connections.keys():
+                connection_weights[(node.node_id,
+                                    connection.node_id)] = node.connections[connection]
+        for node in self.inputs + self.hidden:
+            for connection in node.connections.keys():
+                connection_weights[(node.node_id,
+                                    connection.node_id)] = node.connections[connection]
+
+
         child.build_network_from_genome(child_genome,
                                         more_fit.input_labels,
-                                        more_fit.output_labels)
+                                        more_fit.output_labels,
+                                        connection_weights)
 
         return child
 
@@ -413,114 +446,465 @@ class NeuralNetwork(object):
     def print(self):
         pass
 
+
+class NeuralNetwork2(object):
+    """
+    Second generation implementation of NeuralNetwork. This version uses
+    a much more efficient data structure representation which makes it much
+    faster and less confusing.
+    """
+    # TODO: Use Guassian Distributions instead of uniform distributions 
+    def __init__(self, input_size, output_size, input_labels, output_labels,
+                 output_function_type='tanh', hidden_function_type='tanh',
+                 learning_constant=1, struct_mut_con_rate=0.5,
+                 struct_mut_new_rate=0.5, n_struct_mut_rate=0.001):
+        """
+        """
+        self.connection_list = {}
+        # id : {type: , label: , connections: {id: {weight: , innovation: , enabled: }} , function: }
+
+        self.input_size = input_size
+        self.input_labels = input_labels
+        self.output_size = output_size
+        self.output_labels = output_labels
+
+        self.h_function = hidden_function_type
+        self.o_function = output_function_type
+
+        self.genome = {} # Best data stucture for a genome?
+        self.innovation_number = 0
+        self.node_id = 0
+
+        self.struct_mut_con_rate = struct_mut_con_rate
+        self.struct_mut_new_rate = struct_mut_new_rate
+        self.n_struct_mut_rate = n_struct_mut_rate
+        self.n_struct_mut_minimizer = 0.25
+
+        self.learning_constant=learning_constant
+
+    def inci(self):
+        """
+        """
+        innov = self.innovation_number
+        self.innovation_number += 1
+        return innov
+
+        
+    def build_network(self, generation_genome,
+                      generation_innov):
+        """
+        Builds a network with all of the inputs connected to all of the outputs.
+        """
+        for i in range(self.output_size):
+            label = self.output_labels[i]
+
+            self.connection_list[self.node_id] = {
+                'type': 'output',
+                'label': label,
+                'connections': None,
+                'function': ActivationFunction(function=self.o_function)
+            }
+            self.node_id += 1
+
+        for i in range(self.input_size):
+            label = self.input_labels[i]
+
+            connections = {}
+            for node in self.connection_list.keys():
+                if self.connection_list[node]['type'] == 'output':
+                    connections[node] = {
+                        'weight': random.uniform(-1, 1),
+                        'innovation': self.inci(),
+                        'enabled': True
+                    }
+
+                    if (self.node_id, node) in generation_genome.keys():
+                        gene = generation_genome[(self.node_id, node)]
+                        self.genome[(self.node_id, node)] = gene
+                    else:
+                        gene = (generation_innov, True)
+                        generation_genome[(self.node_id, node)] = gene
+                        self.genome[(self.node_id, node)] = gene
+                        generation_innov += 1
+                
+            self.connection_list[self.node_id] = {
+                'type': 'input',
+                'label': label,
+                'connections': connections,
+                'function': ActivationFunction(function='identity')
+            }
+
+            self.node_id += 1
+
+        return (generation_genome, generation_innov)
+
+
+    def feed_forward(self, input_dict):
+        """
+        """
+        inputs = []
+        ff_list = self.connection_list
+        for node in self.connection_list.keys():
+            ff_list[node]['value'] = 0
+            
+            if ff_list[node]['type'] == 'input':
+                ff_list[node]['value'] = input_dict[ff_list[node]['label']]
+                inputs.append(node)
+
+        outputs = {}
+        open_list = queue.Queue()
+        seen = []
+        
+        for i in inputs:
+            open_list.put(i)
+
+        while not open_list.empty():
+            curr_id = open_list.get()
+            
+            if curr_id not in seen:
+                current = ff_list[curr_id]
+                activation = current['function'].evaluate(current['value'])
+                
+                if current['type'] == 'output':
+                    if current['label']:
+                        outputs[current['label']] = activation
+                    else:
+                        outputs[curr_id] = activation
+                
+                else:
+                    for con in current['connections']:
+                        curr_con = current['connections'][con]
+                        if curr_con['enabled']:
+                            open_list.put(con)
+                            ff_list[con]['value'] += activation*curr_con['weight']
+
+                seen.append(curr_id)
+                
+        return outputs
+
+
+    def back_propogate(self):
+        pass
+
+
+    def structural_mutation(self, generation_genome, generation_innov):
+        """
+        Add connections if we can and add new nodes
+        """
+        if random.uniform(0, 1) <= self.struct_mut_new_rate:
+            choice = random.choice(list(self.connection_list.keys()))
+
+            # Don't choose an output node
+            while self.connection_list[choice]['type'] == 'output':
+                choice = random.choice(list(self.connection_list.keys()))
+
+            self.connection_list[self.node_id] = {
+                'type': 'hidden',
+                'label': None,
+                'connections': None,
+                'function': ActivationFunction(self.h_function)
+            }
+
+            # TODO: Choice has no connections and is assigning None to the new hidden
+            if not self.connection_list[choice]['connections']:
+                print(choice)
+                print(self.connection_list)
+                print("Error")
+                exit(1)
+                
+            self.connection_list[self.node_id]['connections'] = self.connection_list[choice]['connections']
+            # remove the connection from the genome
+
+            # TODO: Re-factor with a check-genome method
+            for c in self.connection_list[choice]['connections']:
+                gene = (choice, c)
+                if gene in generation_genome.keys():
+                    innov_number = generation_genome[gene][0]
+                else:
+                    generation_innov += 1
+                    innov_number = generation_innov
+                    generation_genome[gene] = (innov_number, False)
+                
+                self.genome[gene] = (innov_number, False)
+
+                gene = (self.node_id, c)
+                if gene in generation_genome.keys():
+                    innov_number = generation_genome[gene][0]
+                else:
+                    generation_innov += 1
+                    innov_number = generation_innov
+                    generation_genome[gene] = (innov_number, True)
+                
+                self.genome[gene] = (innov_number, True)
+
+            gene = (choice, self.node_id)
+            if gene in generation_genome.keys():
+                innov_number = generation_genome[gene][0]
+            else:
+                generation_innov += 1
+                innov_number = generation_innov
+                generation_genome[gene] = (innov_number, True)
+                
+            self.genome[(choice, self.node_id)] = (innov_number, True)
+            
+            if (choice, self.node_id) in generation_genome.keys():
+                pass
+            
+            self.connection_list[choice]['connections'] = {
+                self.node_id: {
+                    'weight' : 1,
+                    'innovation': 0,
+                    'enabled' : True,
+                    }
+                }
+
+            self.node_id += 1
+
+        return (generation_genome, generation_innov)
+
+
+        # Only add "Up-stream" connections BFS through, stop on the node we are
+        # adding a connection to, then only add connections to nodes we haven't
+        # seen yet
+
+
+    def non_structural_mutation(self):
+        """
+        Manipulate the weights of some of the connections. We do not add
+        connections to the genome.
+        """
+        for n_id in self.connection_list:
+            connections = self.connection_list[n_id]['connections']
+            if connections:
+                for connec in connections:
+                    if random.uniform(0, 1) <= self.n_struct_mut_rate:
+                        connections[connec]['weight'] += random.uniform(
+                            -1 - connections[connec]['weight'],
+                            1 - connections[connec]['weight']
+                        )*self.n_struct_mut_minimizer
+
+        return
+
+
+    def breed(self, mate, fitness_this, fitness_mate, generation_genome,
+              generation_innov):
+        more_fit = less_fit = None
+
+        if fitness_this > fitness_mate:
+            more_fit = self
+            less_fit = mate
+        else:
+            more_fit = mate
+            less_fit = self
+
+        child = NeuralNetwork2(self.input_size, self.output_size,
+                               self.input_labels, self.output_labels,
+                              output_function_type=self.o_function,
+                              hidden_function_type=self.h_function,
+                              learning_constant=self.learning_constant,
+                              struct_mut_con_rate=self.struct_mut_con_rate,
+                              struct_mut_new_rate=self.struct_mut_new_rate,
+                              n_struct_mut_rate=self.n_struct_mut_rate)
+
+        child.build_network(generation_genome, generation_innov)
+
+        child_genome = child.genome
+
+        for g in less_fit.genome:
+            if g in more_fit.genome:
+                gene = more_fit.genome[g]
+            else:
+                gene = less_fit.genome[g]
+
+            if gene[1]:
+                if g in more_fit.genome:
+                    weight = more_fit.connection_list[g[0]]['connections'][g[1]]['weight']
+                else:
+                    weight = less_fit.connection_list[g[0]]['connections'][g[1]]['weight']
+                if g in generation_genome:
+                    new_gene = generation_genome[g]
+                else:
+                    new_gene = (generation_innov, True)
+                    generation_innov += 1
+                    generation_genome[g] = new_gene
+
+                child_genome[g] = new_gene
+
+                if g[0] not in child.connection_list:
+                    child.connection_list[g[0]] = {
+                        'type': 'hidden',
+                        'label': None,
+                        'connections': {},
+                        'function': ActivationFunction(child.h_function)
+                    }
+
+                if g[1] not in child.connection_list[g[0]]['connections']:
+                    child.connection_list[g[0]]['connections'][g[1]] = None
+
+                child.connection_list[g[0]]['connections'][g[1]] = {
+                    'weight': weight,
+                    'innovation': new_gene[0],
+                    'enabled': True
+                }
+
+        for g in more_fit.genome:
+            if g not in child_genome:
+                gene = more_fit.genome[g]
+
+            if gene[1]:
+                if g not in child_genome:
+                    weight = more_fit.connection_list[g[0]]['connections'][g[1]]['weight']
+                
+                if g in generation_genome:
+                    new_gene = generation_genome[g]
+                else:
+                    new_gene = (generation_innov, True)
+                    generation_innov += 1
+                    generation_genome[g] = new_gene
+
+                child_genome[g] = new_gene
+
+                if g[0] not in child.connection_list:
+                    child.connection_list[g[0]] = {
+                        'type': 'hidden',
+                        'label': None,
+                        'connections': {},
+                        'function': ActivationFunction(child.h_function)
+                    }
+
+                if g[1] not in child.connection_list[g[0]]['connections']:
+                    child.connection_list[g[0]]['connections'][g[1]] = None
+
+                child.connection_list[g[0]]['connections'][g[1]] = {
+                    'weight': weight,
+                    'innovation': new_gene[0],
+                    'enabled': True
+                }
+
+        return (generation_genome, generation_innov, child)
+
+
+    def save_nn(self):
+        pass
+
     
 if __name__ == "__main__":
     import sys
     sys.path.insert(0, './../')
     from ga.individual import Individual
-    from ga.evolution import EvolutionaryController
-        
-    class NEATNN(Individual):
+    from ga.neat_evolution import EvolutionaryController
 
+    nn = NeuralNetwork2(2, 2, ['a', 'b'], ['c', 'd'],
+                        n_struct_mut_rate=1, struct_mut_new_rate=1)
+    gg = {}
+    gi = 0
+    (gg, gi) = nn.build_network( gg, gi)
+    print(nn.feed_forward({'a': 1, 'b': 2}))
+    nn.non_structural_mutation()
+    (gg, gi) = nn.structural_mutation(gg, gi)
+    print(nn.feed_forward({'a': 1, 'b': 2}))
+
+    nn2 = NeuralNetwork2(2, 2, ['a', 'b'], ['c', 'd'],
+                        n_struct_mut_rate=1, struct_mut_new_rate=1)
+    (gg, gi) = nn2.build_network(gg, gi)
+    for i in range(10):
+        nn.non_structural_mutation()
+        (gg, gi) = nn2.structural_mutation(gg, gi)
+        nn.non_structural_mutation()
+        (gg, gi) = nn2.structural_mutation(gg, gi)
+
+    new_gg = {}
+    new_gi = 0
+    (new_gg, new_gi, child) = nn.breed(nn2, 1, 2, new_gg, new_gi)
+    print(child.feed_forward({'a': 1, 'b': 2}))
+
+    class NEATNN2(object):
         def __init__(self):
             self.network = None
-            
+
+
         def individual_print(self):
             return ""
-    
-    
+
+        
         def fitness_function(self):
             fitness = 0
-            results = [list(self.network.feed_forward(a).values())[0] for a in [[0,0], [0, 1], [1, 0], [1, 1]]]
+            results = [list(self.network.feed_forward(a).values())[0] for a in [{'a': 0,'b': 0}, {'a': 0, 'b':1}, {'a':1, 'b':0}, {'a': 1, 'b':1}]]
             actual = [0, 1, 1, 0]
             for i in range(len(actual) - 1):
                 fitness += abs(actual[i] - results[i])
 
             return fitness
-    
-    
-        def breed_parents(self, parent_tuple, child, reproduction_constant):
-            child.network = parent_tuple[0][1].network.breed(
+
+
+        def breed_parents(self, parent_tuple, child, reproduction_constant, generation_genome, generation_innov):
+            (generation_genome, generation_innov,child.network) = parent_tuple[0][1].network.breed(
                 parent_tuple[1][1].network,
                 parent_tuple[0][0],
-                parent_tuple[1][0]
+                parent_tuple[1][0], generation_genome, generation_innov
             )
 
-            return child
-    
-    
-        def mutate(self, mutation_constant):
-            self.network.structural_mutation(self.network.innovation_number,
-                                     self.network.genome)
-    
-    
-        def generate_random(self):
-            self.network = NeuralNetwork(2, 1, struct_mut_new_rate=1)
-            self.network.build_network(['a', 'b'], ['o'])
+            return (generation_genome, generation_innov)
 
+        
+        def mutate(self, mutation_constant, generation_genome, generation_innov):
+            (generation_genome, generation_innov) = self.network.structural_mutation(generation_genome, generation_innov)
+            self.network.non_structural_mutation()
+
+            return (generation_genome, generation_innov)
+
+        
+        def generate_random(self, generation_genome, generation_innov):
+            self.network = NeuralNetwork2(2, 1, ['a', 'b'], ['o'],
+                                          struct_mut_new_rate=1,
+                                          struct_mut_con_rate=1,
+                                          n_struct_mut_rate=1)
+            
+            return self.network.build_network(generation_genome, generation_innov)
     
-    EC = EvolutionaryController(NEATNN)
+
+    EC = EvolutionaryController(NEATNN2)
     EC.run_evolution(15, 1, 1, printing='full', generation_limit=100)
     
-    # Back-propogation to do live learning
-
-    # nn1 = NeuralNetwork(3, 2, struct_mut_new_rate=1)
-    # nn2 = NeuralNetwork(3, 2, struct_mut_new_rate=1)
-    # nn1.build_network(['a', 'b', 'c'], ['p', 'q'])
-    # nn2.build_network(['a', 'b', 'c'], ['p', 'q'])
+    # class NEATNN(Individual):
     # 
-    # nn1.structural_mutation(nn1.innovation_number, nn1.genome)
+    #     def __init__(self):
+    #         self.network = None
+    #         
+    #     def individual_print(self):
+    #         return ""
     # 
-    # nnc = nn1.breed(nn2, 1, 2)
     # 
-    # a = nnc.feed_forward([1, 2, 3])
-    # for out in a:
-    #     print(a[out])
-    
-    # nn = NeuralNetwork(3, 2, struct_mut_new_rate=1)
-    # nn.build_network(['a', 'b', 'c'], ['p', 'q'])
-    # g_innov = nn.innovation_number
-    # g_genome = nn.genome
+    #     def fitness_function(self):
+    #         fitness = 0
+    #         results = [list(self.network.feed_forward(a).values())[0] for a in [[0,0], [0, 1], [1, 0], [1, 1]]]
+    #         actual = [0, 1, 1, 0]
+    #         for i in range(len(actual) - 1):
+    #             fitness += abs(actual[i] - results[i])
     # 
-    # a = nn.feed_forward([1, 2, 3])
+    #         return fitness
     # 
-    # for out in a:
-    #     print(a[out])
-    #     
-    # g_innov = nn.structural_mutation(g_innov, g_genome)
     # 
-    # print()
-    # a = nn.feed_forward([1, 2, 3])
+    #     def breed_parents(self, parent_tuple, child, reproduction_constant):
+    #         child.network = parent_tuple[0][1].network.breed(
+    #             parent_tuple[1][1].network,
+    #             parent_tuple[0][0],
+    #             parent_tuple[1][0]
+    #         )
     # 
-    # for out in a:
-    #     print(a[out])
+    #         return child
     # 
-    # print(nn.genome)
-
-    # nn = NeuralNetwork(30, 30, struct_mut_new_rate=1)
-    # nn.build_network(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
-    #                   'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
-    #                   't', 'u', 'v', 'w', 'x', 'y', 'z', 'aa', 'ab', 'ac',
-    #                   'ad'],
-    #                  ['ba', 'bb', 'bc', 'bd', 'be', 'bf', 'bg', 'bh', 'bi',
-    #                   'bj', 'bk', 'bl', 'bm', 'bn', 'bo', 'bp', 'bq', 'br', 'bs',
-    #                   'bt', 'bu', 'bv', 'bw', 'bx', 'by', 'bz', 'baa', 'bab', 'bac',
-    #                   'bad'])
-    # g_innov = nn.innovation_number
-    # g_genome = nn.genome
     # 
-    # a = nn.feed_forward([1 for i in range(29)])
+    #     def mutate(self, mutation_constant):
+    #         self.network.structural_mutation(self.network.innovation_number,
+    #                                  self.network.genome)
+    #         self.network.non_structural_mutation()
     # 
-    # for out in a:
-    #     print(a[out])
-    #     
-    # g_innov = nn.structural_mutation(g_innov, g_genome)
     # 
-    # print()
-    # a = nn.feed_forward([1 for i in range(29)])
+    #     def generate_random(self):
+    #         self.network = NeuralNetwork(2, 1, struct_mut_new_rate=1, struct_mut_con_rate=1, n_struct_mut_rate=1)
+    #         self.network.build_network(['a', 'b'], ['o'])
     # 
-    # for out in a:
-    #     print(a[out])
     # 
-    # print(nn.genome)
-    
+    # EC = EvolutionaryController(NEATNN)
+    # EC.run_evolution(15, 1, 1, printing='full', generation_limit=100)
