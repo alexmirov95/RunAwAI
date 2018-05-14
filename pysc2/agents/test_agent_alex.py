@@ -35,41 +35,62 @@ _ATTACK_SCREEN = actions.FUNCTIONS.Attack_screen.id
 _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _NOT_QUEUED = [0]
 _SELECT_ALL = [0]
+_UNIT_TYPE = features.SCREEN_FEATURES.unit_type.index
+
+
+def get_location(pixel_y, pixel_x, mode='Single'):
+    if mode == 'Multiple':
+        raise ValueError('unimplemented for mode=Single')
+    y = pixel_y.mean()
+    x = pixel_x.mean()
+    return (x, y)
 
 
 class MoveTest(base_agent.BaseAgent):
   """An agent specifically for solving the MoveToBeacon map."""
 
   ct = 0
+  # square dancing
   locations = [[int(10), int(10)], [int(50), int(15)], [int(50), int(50)], [int(10), int(50)]]
+  # linear movement along x axis
+  # locations = [[int(5), int(30)], [int(10), int(30)], [int(15), int(30)], [int(20), int(30)]]
+
+  target = [-1] * 2 # uninitialized target value
 
   def step(self, obs):
     super(MoveTest, self).step(obs)
     if _MOVE_SCREEN in obs.observation["available_actions"]:
       
+      # get player locations
       player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
-      neutral_y, neutral_x = (player_relative == _PLAYER_NEUTRAL).nonzero()
-      
-      print("neutral_x = ", neutral_x)
-      print("neutral_y = ", neutral_y)
+      player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+      locationTuple = [int(player_x.mean()), int(player_y.mean())]
 
-      # if not neutral_y.any():
-        # time.sleep(0.3)
-        # return actions.FunctionCall(_NO_OP, [])
-      
-      # target = [int(neutral_x.mean()), int(neutral_y.mean())]
-      target = self.locations[self.ct % 4]
-      # target = [int(5), int (5)]
-      self.ct += 1
-      time.sleep(0.1)
-      print ("moving to ", target[0], ",", target[1])
+      # how close the units will get to the destination before selecting a new target destination
+      distToTarget = 5
+      if ( ((abs(locationTuple[0] - self.target[0]) >= distToTarget) or (abs(locationTuple[1] - self.target[1]) >= distToTarget)) and (self.target[0] >= 0)):
+        # has not reached (or at least gotten close to) destination
+        # no op
+        time.sleep(0.2)
+        print("No op")
+        print("   locationTuple=", locationTuple, "     target=", self.target)
+        return actions.FunctionCall(_NO_OP, [])
+      else:
+        # close enough to destination for a new waypoint
+        # set new target destination waypoint
+        time.sleep(0.2)
+        self.target = self.locations[self.ct % 4] # iterate thru the same 4 array values
+        self.ct += 1
+        print ("moving to ", self.target[0], ",", self.target[1])
+        return actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, self.target])
 
-      return actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, target])
     else:
-      print("selecting army units")
-      return actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])
+      print("selecting units")
+      # Select all units
+      # return actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])
 
-    # time.sleep(5)
+      # Selection Single Unit
+      return actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])
 
 
 
