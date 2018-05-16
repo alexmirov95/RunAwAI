@@ -16,7 +16,10 @@ import copy
 import queue
 import random
 
-from activation import ActivationFunction
+import sys
+sys.path.insert(0, './../')
+
+from nn.activation import ActivationFunction
 
 class NeuralNetwork(object):
 
@@ -471,112 +474,3 @@ class NeuralNetwork(object):
                     del callers[-1]
 
         return False
-
-
-if __name__ == "__main__":
-    import sys
-    sys.path.insert(0, './../')
-
-    from ga.individual import Individual
-    from ga.evolution import EvolutionaryController
-
-    #np.random.seed(1)
-    #random.seed(1)
-
-    nn = NeuralNetwork(2, 2, ['a', 'b'], ['c', 'd'],
-                        n_struct_mut_rate=1, struct_mut_new_rate=1)
-    
-    nn.build_network()
-    print(nn.feed_forward({'a': 1, 'b': 2}))
-    nn.non_structural_mutation()
-    nn.structural_mutation()
-    print(nn.feed_forward({'a': 1, 'b': 2}))
-
-    nn2 = NeuralNetwork(2, 2, ['a', 'b'], ['c', 'd'],
-                        n_struct_mut_rate=1, struct_mut_new_rate=1,
-                        struct_mut_con_rate=1)
-    nn2.build_network()
-    for i in range(10):
-        nn.non_structural_mutation()
-        nn2.structural_mutation()
-        nn.non_structural_mutation()
-        nn2.structural_mutation()
-        nn.dfs()
-        nn2.dfs()
-
-    child = nn.breed(nn2, 1, 2)
-    print(child.feed_forward({'a': 1, 'b': 2}))
-
-
-    class NEATNN(object):
-        def __init__(self):
-            self.network = None
-
-
-        def individual_print(self):
-            return ""
-
-        
-        def fitness_function(self):
-            fitness = 0
-            results = [list(self.network.feed_forward(a).values())[0] for a in [{'a': 0,'b': 0}, {'a': 0, 'b':1}, {'a':1, 'b':0}, {'a': 1, 'b':1}]]
-            actual = [0, 1, 1, 0]
-            for i in range(len(actual)):
-                fitness += (abs(actual[i] - results[i]))**2
-
-            #a = (1 - 1/self.network.node_id)
-            if self.network.node_id > 5:
-                fitness += 30*self.network.node_id
-
-            if self.network.node_id < 5:
-                fitness += 10*(5 - self.network.node_id)
-            return fitness
-
-
-        def breed_parents(self, parent_tuple, child, reproduction_constant):
-            child.network = parent_tuple[0][1].network.breed(
-                parent_tuple[1][1].network,
-                parent_tuple[0][0],
-                parent_tuple[1][0]
-            )
-
-            return 
-
-        
-        def mutate(self, mutation_constant):
-            self.network.structural_mutation()
-            self.network.non_structural_mutation()
-
-            return
-
-        
-        def generate_random(self):
-            self.network = NeuralNetwork(2, 1, ['a', 'b'], ['o'],
-                                          struct_mut_new_rate=0.2,
-                                          struct_mut_con_rate=0.2,
-                                          n_struct_mut_rate=0.2)
-
-            self.network.build_network()
-            return
-
-
-        def __lt__(self, other):
-            return self
-    
-
-    EC = EvolutionaryController(NEATNN)
-    nn = EC.run_evolution(10, 1, 1, printing='minimal', generation_limit=5000)
-    print([list(nn.network.feed_forward(a).values())[0] for a in [{'a': 0,'b': 0}, {'a': 0, 'b':1}, {'a':1, 'b':0}, {'a': 1, 'b':1}]])
-    nn.network.print_connections()
-
-    print()
-    for node in nn.network.g_dict:
-        data = {}
-        data[node] = {}
-
-        if nn.network.g_dict[node]['connections']:
-            for connection in nn.network.g_dict[node]['connections']:
-                data[node][connection] = nn.network.g_dict[node]['connections'][connection]['weight']
-
-        print(data)
-#    print(nn.network.g_dict)
