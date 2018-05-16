@@ -72,7 +72,7 @@ if __name__ == "__main__":
         
         def mutate(self, mutation_constant):
             """ We preform two types of network mutations, structural and
-gi            non-structural. The structural mutations add nodes to the network
+            non-structural. The structural mutations add nodes to the network
             and the non-structural mutations add connections between previously
             disconnected nodes. """
             
