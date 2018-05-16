@@ -91,6 +91,7 @@ if __name__ == "__main__":
 
 
         def assign_string(self, string):
+            # TODO: This method is useless?
             self.string = string
 
 

@@ -504,6 +504,7 @@ class NeuralNetwork2(object):
                 'connections': None,
                 'function': ActivationFunction(function=self.o_function)
             }
+            
             self.node_id += 1
 
         for i in range(self.input_size):
@@ -587,10 +588,103 @@ class NeuralNetwork2(object):
         pass
 
 
+    def print_connections(self):
+        connections = {}
+        for node in self.connection_list:
+            connections[node] = []
+            if self.connection_list[node]['connections']:
+                for connection in self.connection_list[node]['connections'].keys():
+                    if self.connection_list[node]['connections'][connection]:
+                        connections[node].append(connection)
+
+        print(connections)
+        #print(self.genome)
+        return
+
+    
+    def dfs(self):
+        depths = {}
+
+        for connection in self.connection_list.keys():
+            if self.connection_list[connection]['type'] == 'input':
+                depths = self._dfs(connection, depths, 0)
+
+        return depths
+
+
+    def _dfs(self, node, depths, current_depth):
+        if node not in depths:
+            depths[node] = current_depth
+        else:
+            if depths[node] < current_depth:
+                depths[node] = current_depth
+
+        if not self.connection_list[node]['connections']:
+            return depths
+
+        if self.connection_list[node]['type'] == 'output':
+            return depths
+
+        for connection in self.connection_list[node]['connections'].keys():
+            if self.connection_list[node]['connections'][connection]['enabled']:
+                self._dfs(connection, depths, current_depth + 1)
+
+        return depths
+
+
+    def detect_cycle(self):
+        """
+        """
+        for connection in self.connection_list.keys():
+            if self.connection_list[connection]['type'] == 'input':
+                if self._detect_cycle(connection, [connection]):
+                    return True
+
+        return False
+    
+    def _detect_cycle(self, node, callers):
+        """
+        """
+        if not self.connection_list[node]['connections']:
+            return False
+
+        if self.connection_list[node]['type'] == 'ouput':
+            return True
+
+        for connection in self.connection_list[node]['connections'].keys():
+            if self.connection_list[node]['connections'][connection]['enabled']:
+                if connection in callers:
+                    print(callers[0], end='')
+                    for i in range(1, len(callers)):
+                        print('->', callers[i], end='')
+
+                    print('->', connection)
+                    return True
+                else:
+                    callers.append(connection)
+                    if self._detect_cycle(connection, callers):
+                        return True
+                    
+                    del callers[-1]
+
+        return False
+    
     def structural_mutation(self, generation_genome, generation_innov):
         """
         Add connections if we can and add new nodes
         """
+        if random.uniform(0, 1) <= self.struct_mut_con_rate:
+            if self.detect_cycle():
+                print("Cycle detected")
+                exit(1)
+            self.print_connections()
+            self.dfs()
+
+            
+        # TODO, check that the node we are adding has a new id.
+        # When adding a new connection, check that the connection with that node
+        # is is already present in the genome
+        
         if random.uniform(0, 1) <= self.struct_mut_new_rate:
             choice = random.choice(list(self.connection_list.keys()))
 
@@ -598,46 +692,73 @@ class NeuralNetwork2(object):
             while self.connection_list[choice]['type'] == 'output':
                 choice = random.choice(list(self.connection_list.keys()))
 
-            self.connection_list[self.node_id] = {
+            node_connection = random.choice(list(self.connection_list[choice]['connections'].keys()))
+
+            if not generation_genome[(choice, node_connection)][1]:
+                for (a, b) in generation_genome.keys():
+                    if b == node_connection:
+                        new_node_id = a
+                        break
+
+            new_node_id = self.node_id
+            
+            self.connection_list[new_node_id] = {
                 'type': 'hidden',
                 'label': None,
                 'connections': None,
                 'function': ActivationFunction(self.h_function)
             }
-
-            # TODO: Choice has no connections and is assigning None to the new hidden
-            if not self.connection_list[choice]['connections']:
-                print(choice)
-                print(self.connection_list)
-                print("Error")
-                exit(1)
-                
-            self.connection_list[self.node_id]['connections'] = self.connection_list[choice]['connections']
-            # remove the connection from the genome
+            
+            self.connection_list[new_node_id]['connections'] = {
+                node_connection: self.connection_list[choice]['connections'][node_connection]
+            }
 
             # TODO: Re-factor with a check-genome method
-            for c in self.connection_list[choice]['connections']:
-                gene = (choice, c)
-                if gene in generation_genome.keys():
-                    innov_number = generation_genome[gene][0]
-                else:
-                    generation_innov += 1
-                    innov_number = generation_innov
-                    generation_genome[gene] = (innov_number, False)
-                
-                self.genome[gene] = (innov_number, False)
+            # for c in self.connection_list[choice]['connections']:
+            #     gene = (choice, c)
+            #     if gene in generation_genome.keys():
+            #         innov_number = generation_genome[gene][0]
+            #     else:
+            #         generation_innov += 1
+            #         innov_number = generation_innov
+            #         generation_genome[gene] = (innov_number, False)
+            #     
+            #     self.genome[gene] = (innov_number, False)
+            # 
+            #     gene = (new_node_id, c)
+            #     if gene in generation_genome.keys():
+            #         innov_number = generation_genome[gene][0]
+            #     else:
+            #         generation_innov += 1
+            #         innov_number = generation_innov
+            #         generation_genome[gene] = (innov_number, True)
+            #     
+            #     self.genome[gene] = (innov_number, True)
 
-                gene = (self.node_id, c)
-                if gene in generation_genome.keys():
-                    innov_number = generation_genome[gene][0]
-                else:
-                    generation_innov += 1
-                    innov_number = generation_innov
-                    generation_genome[gene] = (innov_number, True)
-                
-                self.genome[gene] = (innov_number, True)
+            c = node_connection
+            gene = (choice, c)
+            if gene in generation_genome.keys():
+                innov_number = generation_genome[gene][0]
+            else:
+                generation_innov += 1
+                innov_number = generation_innov
+                generation_genome[gene] = (innov_number, False)
+            
+            self.genome[gene] = (innov_number, False)
+            
+            gene = (new_node_id, c)
+            if gene in generation_genome.keys():
+                innov_number = generation_genome[gene][0]
+            else:
+                generation_innov += 1
+                innov_number = generation_innov
+                generation_genome[gene] = (innov_number, True)
+            
+            self.genome[gene] = (innov_number, True)
 
-            gene = (choice, self.node_id)
+
+
+            gene = (choice, new_node_id)
             if gene in generation_genome.keys():
                 innov_number = generation_genome[gene][0]
             else:
@@ -645,18 +766,14 @@ class NeuralNetwork2(object):
                 innov_number = generation_innov
                 generation_genome[gene] = (innov_number, True)
                 
-            self.genome[(choice, self.node_id)] = (innov_number, True)
+            self.genome[(choice, new_node_id)] = (innov_number, True)
             
-            if (choice, self.node_id) in generation_genome.keys():
-                pass
-            
-            self.connection_list[choice]['connections'] = {
-                self.node_id: {
-                    'weight' : 1,
-                    'innovation': 0,
-                    'enabled' : True,
-                    }
-                }
+            self.connection_list[choice]['connections'].pop(node_connection)
+            self.connection_list[choice]['connections'][new_node_id] = {
+                'weight' : 1,
+                'innovation': 0,
+                'enabled' : True,
+            }
 
             self.node_id += 1
 
@@ -710,6 +827,7 @@ class NeuralNetwork2(object):
 
         child_genome = child.genome
 
+        
         for g in less_fit.genome:
             if g in more_fit.genome:
                 gene = more_fit.genome[g]
@@ -718,14 +836,16 @@ class NeuralNetwork2(object):
 
             if gene[1]:
                 if g in more_fit.genome:
+                    print(g)
+                    print(more_fit.genome)
                     weight = more_fit.connection_list[g[0]]['connections'][g[1]]['weight']
                 else:
                     weight = less_fit.connection_list[g[0]]['connections'][g[1]]['weight']
                 if g in generation_genome:
                     new_gene = generation_genome[g]
                 else:
-                    new_gene = (generation_innov, True)
                     generation_innov += 1
+                    new_gene = (generation_innov, True)
                     generation_genome[g] = new_gene
 
                 child_genome[g] = new_gene
@@ -738,6 +858,8 @@ class NeuralNetwork2(object):
                         'function': ActivationFunction(child.h_function)
                     }
 
+                    child.node_id += 1
+
                 if g[1] not in child.connection_list[g[0]]['connections']:
                     child.connection_list[g[0]]['connections'][g[1]] = None
 
@@ -746,6 +868,9 @@ class NeuralNetwork2(object):
                     'innovation': new_gene[0],
                     'enabled': True
                 }
+
+                if child.detect_cycle():
+                    del child.connection_list[g[0]]['connections'][g[1]]
 
         for g in more_fit.genome:
             if g not in child_genome:
@@ -758,8 +883,8 @@ class NeuralNetwork2(object):
                 if g in generation_genome:
                     new_gene = generation_genome[g]
                 else:
-                    new_gene = (generation_innov, True)
                     generation_innov += 1
+                    new_gene = (generation_innov, True)
                     generation_genome[g] = new_gene
 
                 child_genome[g] = new_gene
@@ -772,6 +897,8 @@ class NeuralNetwork2(object):
                         'function': ActivationFunction(child.h_function)
                     }
 
+                    child.node_id += 1
+
                 if g[1] not in child.connection_list[g[0]]['connections']:
                     child.connection_list[g[0]]['connections'][g[1]] = None
 
@@ -780,6 +907,15 @@ class NeuralNetwork2(object):
                     'innovation': new_gene[0],
                     'enabled': True
                 }
+                        
+        child.node_id += 1
+        if child.detect_cycle():
+            print("Cycle detected after breeding")
+            child.print_connections()
+            more_fit.print_connections()
+            less_fit.print_connections()
+            
+            exit(5)
 
         return (generation_genome, generation_innov, child)
 
@@ -834,6 +970,7 @@ if __name__ == "__main__":
             for i in range(len(actual) - 1):
                 fitness += abs(actual[i] - results[i])
 
+            #a = (1 - 1/self.network.node_id)
             return fitness
 
 
@@ -859,12 +996,12 @@ if __name__ == "__main__":
                                           struct_mut_new_rate=1,
                                           struct_mut_con_rate=1,
                                           n_struct_mut_rate=1)
-            
+
             return self.network.build_network(generation_genome, generation_innov)
     
 
     EC = EvolutionaryController(NEATNN2)
-    EC.run_evolution(15, 1, 1, printing='full', generation_limit=100)
+    EC.run_evolution(3, 1, 1, printing='full', generation_limit=30)
     
     # class NEATNN(Individual):
     # 
