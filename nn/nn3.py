@@ -104,11 +104,11 @@ class NeuralNetwork(object):
 
         return: None """
         
-        r_map = {}
-        o_map = {}
-        n_id = 0
+        r_map = {} # Maps new node ids to old node ids
+        o_map = {} # Maps old node ids to new node ids
+        n_id = 0 # New node id
         o_id = MAX_NETWORK_SIZE
-        n_g_dict = {}
+        n_g_dict = {} # New connection dict
 
         inputs = []
         for nn in self.g_dict.keys():
@@ -121,11 +121,14 @@ class NeuralNetwork(object):
         for ii in inputs:
             o_list.put(ii)
 
+        # Walk through the network until we have seen all of the nodes
         while not o_list.empty():
             c_id = o_list.get()
 
             if c_id not in seen:
                 if self.g_dict[c_id]['type'] == 'output':
+                    # Start labeling output nodes at MAX_NETWORK_SIZE so that
+                    # they maintain a consistent numbering
                     r_map[o_id] = c_id
                     o_map[c_id] = o_id
                     n_g_dict[o_id] = {
@@ -157,6 +160,8 @@ class NeuralNetwork(object):
                 if n_id >= MAX_NETWORK_SIZE - self.output_size:
                     raise Exception("Network has exceeded max size")
 
+        # Add the connections from the network to the new dictionary, updating
+        # connections with new node ids.
         for nn in n_g_dict:
             n_cons = {}
             if self.g_dict[r_map[nn]]['connections']:
@@ -178,7 +183,8 @@ class NeuralNetwork(object):
         connected neural network. 
        
         return: None """
-        
+
+        # Create output neurons
         for ii in range(self.output_size):
             label = self.output_labels[ii]
 
@@ -190,7 +196,8 @@ class NeuralNetwork(object):
             }
 
             self.node_id += 1
-        
+
+        # Create input neurons and connect them to the output neurons
         for ii in range(self.input_size):
             label = self.input_labels[ii]
             cons = {}
@@ -227,7 +234,11 @@ class NeuralNetwork(object):
           result. """
         
         inputs = []
-        ff_dict = self.g_dict
+        
+        # Dict that will store the value from the forward propogation
+        ff_dict = self.g_dict # TODO: deepcopy or not needed?
+
+        # Reset all of the values
         for nn in self.g_dict.keys():
             ff_dict[nn]['value'] = 0
 
@@ -242,6 +253,7 @@ class NeuralNetwork(object):
         for ii in inputs:
             o_list.put(ii)
 
+        # BFS through the netowork and calculate activation
         while not o_list.empty():
             cur_id = o_list.get()
 
@@ -395,6 +407,10 @@ class NeuralNetwork(object):
 
         child.g_dict = copy.deepcopy(m_fit.g_dict)
 
+        # Clone most fit into child, walk through less fit and add connections
+        # that will not cause cycles in the network, this is some pretty rough
+        # code and is basically just checking that each connection can be added
+        # to the network without creating a cycle.
         for nn in l_fit.g_dict.keys():
             if nn in child.g_dict.keys() and l_fit.g_dict[nn]['connections']:
                 for con in l_fit.g_dict[nn]['connections']:
@@ -437,6 +453,7 @@ class NeuralNetwork(object):
                     }
 
         o_count = 0
+        # Update the labels, functions and types for the new network
         for nn in child.g_dict.keys():
             if not child.g_dict[nn]['connections']:
                 child.g_dict[nn]['type'] = 'output'
