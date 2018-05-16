@@ -3,10 +3,10 @@
 #
 
 """
-nn.py
+nn3.py
 
-Implements a non-recurrent, NEAT compatiable neural network. NEAT was created by
-Kenneth Stanley and Risto Miikkulainen @ University of Texas, Austin.
+Implements a non-recurrent, explicit and topologically unconstrained neural
+network.
 """
 
 MAX_NETWORK_SIZE = 1000
@@ -22,14 +22,42 @@ sys.path.insert(0, './../')
 from nn.activation import ActivationFunction
 
 class NeuralNetwork(object):
+    """ Build a neural network with a static number of inputs and outputs """
 
     def __init__(self, input_size, output_size, input_labels, output_labels,
                  output_function_type='tanh', hidden_function_type='tanh',
                  learning_constant=1, struct_mut_con_rate=0.5,
                  struct_mut_new_rate=0.5, struct_mut_rm_rate=0.5,
                  n_struct_mut_rate=0.001):
-        """
-        """
+        """ Configures network parameters for this neural network. 
+
+        input_size: The number of inputs to the neural network.
+        output_size: The number of outputs from the neural network.
+        input_labels: A list of input_size consisting of labels for the input
+          nodes.
+        output_labels: A list of output_size consisting of labels for the output
+          nodes.
+        output_function_type: The activation function type for the output layer
+          neurons. Avaliable function types can be found in nn/activation.py.
+        hidden_function_type: The activation function type for the hidden layer
+          neurons. Avaliable function types can be found in nn/activation.py.
+        learning_constant:
+        struct_mut_con_rate: A number between 0 and 1 specifing the rate at
+          which new connections form in the network. A 0 is for new connections
+          never being built, and a 1 guarenting a new connection if a new
+          connection is possible.
+        struct_mut_new_rate: A number between 0 and 1 specifing the rate at 
+          which new neurons are added to the network. A 0 adds no new nodes to
+          the network, a 1 gaurentees a new node is added at each structural
+          mutation.
+        struct_mut_rm_rate: This parameter is not currently implemented. 
+          Specifies the rate at which nodes can be spontaniously removed from
+          the network. A number between 0 and 1. 0 is no removal, 1 is a 
+          gaurenteed removal each structural mutation.
+        n_struct_mut_rate:
+
+        return: None """
+        
         self.g_dict = {}
 
         self.input_size = input_size
@@ -54,6 +82,10 @@ class NeuralNetwork(object):
 
 
     def print_connections(self):
+        """ Prints all of the connections in the neural network.
+
+        return: None """
+        
         cons = {}
         for node in self.g_dict:
             cons[node] = []
@@ -67,9 +99,11 @@ class NeuralNetwork(object):
 
     
     def bfs_reorder(self):
-        """
-        Renumber and parse the graph.
-        """
+        """ Walks through the graph and modifies neuron IDs to be in a breadth
+        first ordering. This method modifies the network in place.
+
+        return: None """
+        
         r_map = {}
         o_map = {}
         n_id = 0
@@ -134,10 +168,17 @@ class NeuralNetwork(object):
                 n_g_dict[nn]['connections'] = None
 
         self.g_dict = n_g_dict
+
         return
 
 
     def build_network(self):
+        """ Builds the initial network from the parameters specified in 
+        __init__. Adds the inputs and outputs, labels them, and builds a fully
+        connected neural network. 
+       
+        return: None """
+        
         for ii in range(self.output_size):
             label = self.output_labels[ii]
 
@@ -174,6 +215,17 @@ class NeuralNetwork(object):
 
 
     def feed_forward(self, i_dict):
+        """ Feed values forward through the neural network. Uses a breadth-first
+        flood through the graph to calculate the output values for the network's
+        output neurons. 
+        
+        i_dict: A dictionary containing input labels and the associated input 
+          value for each label. These are the input values that will be fed 
+          forward.
+
+        return: A dictionary of output labels and their associated feed-forward
+          result. """
+        
         inputs = []
         ff_dict = self.g_dict
         for nn in self.g_dict.keys():
@@ -216,8 +268,16 @@ class NeuralNetwork(object):
 
 
     def structural_mutation(self):
+        """ Adds structural mutations to the neural networks. Structural 
+        mutations include adding new connections to the network and adding new
+        nodes to the network. Eventually structural mutations may also include
+        removing nodes from the network as well. Stuctural mutations occur in
+        place and will modify the underlying network.
+
+        return: None """
+        
+        # Add connections if connections are possible to add
         if random.uniform(0, 1) <= self.struct_mut_con_rate:
-            #self.print_connections()
             depths = self.dfs()
             node = random.choice(list(self.g_dict.keys()))
 
@@ -240,24 +300,12 @@ class NeuralNetwork(object):
             elif node != choice:
                 if self.g_dict[node]['connections']:
                     if not choice in self.g_dict[node]['connections'].keys():
-                        # print(depths[node], depths[choice])
                         self.g_dict[node]['connections'][choice] = {
                             'weight': random.gauss(0, 1),
                             'enabled': True
                         }
-                        # print("Before")
-                        # self.dfs()
-                        # print("After")
-                        pass
-                # else:
-                #     self.g_dict[node]['connections'] = {
-                #         choice: {
-                #             'weight': random.uniform(0, 1),
-                #             'enabled': True
-                #         }
-                #     }
-                pass
 
+        # Add new neurons to the neural network
         if random.uniform(0, 1) <= self.struct_mut_new_rate:
             choice = random.choice(list(self.g_dict.keys()))
 
@@ -290,6 +338,13 @@ class NeuralNetwork(object):
 
 
     def non_structural_mutation(self):
+        """ Adds non-structural mutations to the network. Non-structural 
+        mutations are manipulations of the weights between neurons. This is 
+        achieved by adding values from a guassian distribution centered at 0 to
+        the existing weight at a rate proportional to the n_struct_mut_rate.
+        
+        return: None """
+        
         for n_id in self.g_dict:
             cons = self.g_dict[n_id]['connections']
             if cons:
@@ -297,13 +352,23 @@ class NeuralNetwork(object):
                     if random.uniform(0, 1) <= self.n_struct_mut_rate:
                         cons[con]['weight'] += random.gauss(0, 1
                     )
-                        # cons[con]['weight'] *= random.uniform(-1, 1)
-                        # cons[con]['weight'] /= 2
 
         return
 
 
     def breed(self, mate, fit_me, fit_mate):
+        """ Breed this neural network with a mate to produce a neural network
+        offspring. This is not the most efficient evolutionary breeding 
+        algorithm. This algorithm clones the more fit parent, and splices in 
+        missing connections from the less fit parent, as long as those 
+        connections do not create cycles in the neural network.
+        
+        mate: The neural network that this network will breed with.
+        fit_me: The fitness of this network.
+        fit_mate: The fitness of the mate network.
+
+        return: A new child neural network bred from the two parents. """
+        
         m_fit = l_fit = None
 
         if fit_mate < fit_me:
@@ -322,18 +387,12 @@ class NeuralNetwork(object):
                             struct_mut_new_rate=self.struct_mut_new_rate,
                             n_struct_mut_rate=self.n_struct_mut_rate)
 
-        #child.build_network()
-
         m_fit.bfs_reorder()
         l_fit.bfs_reorder()
 
         m_fit_depths = m_fit.dfs()
         l_fit_depths = l_fit.dfs()
 
-        ### ________________________________________________________________ ###
-
-        # TODO: DFS when adding nodes to make sure we don't cycle
-        # 11 -> 16
         child.g_dict = copy.deepcopy(m_fit.g_dict)
 
         for nn in l_fit.g_dict.keys():
@@ -377,9 +436,6 @@ class NeuralNetwork(object):
                         'funciton': None
                     }
 
-
-        ### ________________________________________________________________ ###
-
         o_count = 0
         for nn in child.g_dict.keys():
             if not child.g_dict[nn]['connections']:
@@ -404,19 +460,21 @@ class NeuralNetwork(object):
                 function=child.h_function
             )
 
-        # print("Checking")
-        # m_fit.print_connections()
-        # l_fit.print_connections()
-        # child.print_connections()
-        # child.dfs()
-        # print("PASS")
-        # child.bfs_reorder()
+        # Set child node count to the correct number
         child.node_id = len(child.g_dict.keys())
         
         return child
 
 
     def dfs(self):
+        """ Depth first search through the neural network. This method does not
+        account for cyclic networks, and the recursion will hit the recursive
+        limit. Generates a mapping of the node ids and their depth. Calls the
+        _dfs method recursivly.
+
+        return: A dictionary containing node ids and their depths in the neural
+          network. """
+        
         depths = {}
         
         for con in self.g_dict.keys():
@@ -427,6 +485,16 @@ class NeuralNetwork(object):
 
 
     def _dfs(self, node, depths, current_depth):
+        """ Recursive call for depth first search. Calls itself on each of the
+        connections to the current node. 
+        
+        node: The current node that we are looking at.
+        depths: The depth dictionary.
+        current_depth: The current depth of the node we are currently looking 
+          at.
+
+        return: The updated depths dictionary. """
+        
         if node not in depths:
             depths[node] = current_depth
         else:
@@ -447,6 +515,9 @@ class NeuralNetwork(object):
 
 
     def detect_cycle(self):
+        """ Detects cycles in the neural network by recursivly calling 
+        _detect_cycle. """
+        
         for con in self.g_dict.keys():
             if self.g_dict[con]['type'] == 'input':
                 if self._detect_cycle(con, [con]):
@@ -456,6 +527,8 @@ class NeuralNetwork(object):
 
 
     def _detect_cycle(self, node, callers):
+        """ Recursivly examines the network looking for cycles. """
+        
         if not self.g_dict[node]['connections']:
             return False
 
