@@ -4,6 +4,9 @@
 """
   RunAwAI Agent
   Will run away from enemy units.
+
+  TEST USAGE:
+  python -m pysc2.bin.agent --map DefeatRoaches --agent pysc2.agents.RunAwAI_Agent.RunAwAI
 """
 
 from __future__ import absolute_import
