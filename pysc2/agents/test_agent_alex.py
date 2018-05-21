@@ -56,6 +56,12 @@ class MoveTest(base_agent.BaseAgent):
       player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
       return [int(player_x.mean()), int(player_y.mean())]
 
+  def getCurrentEnemyLocation(self):
+    player_relative = self.obs.observation["screen"][_PLAYER_RELATIVE]
+    player_y, player_x = (player_relative == _PLAYER_HOSTILE).nonzero()
+    return [int(player_x.mean()), int(player_y.mean())]
+
+
   def moveToLocation (self):
     """
       Moves selected unit(s) to self.target location. Returns an object with the
@@ -161,13 +167,16 @@ class MoveTest(base_agent.BaseAgent):
       if returnObj["status"] is "ARRIVED_AT_TARGET":
         # arrived at target, update next target by incrementing location index (ct)
 
+        enemyLocation = self.getCurrentEnemyLocation()
+        print("enemy location = ", enemyLocation)
         
         # AI API WILL GO HERE TO SET DESTINATION!!!!!
         # self.setTargetDestination(self.locations[self.ct % len(self.locations)])
-        movementDirection = random.choice(["NORTH","SOUTH", "EAST", "WEST", "NORTHEAST","SOUTHEAST","SOUTHWEST","NORTHWEST","STAY"])
-        stepSize = random.choice(range(1, 25))
-        self.movementStep(movementDirection, stepSize)
-        print("MOVING", movementDirection, stepSize)
+        # movementDirection = random.choice(["NORTH","SOUTH", "EAST", "WEST", "NORTHEAST","SOUTHEAST","SOUTHWEST","NORTHWEST","STAY"])
+        # stepSize = random.choice(range(1, 25))
+        # self.movementStep(movementDirection, stepSize)
+        # print("MOVING", movementDirection, stepSize)
+        self.setTargetDestination(enemyLocation) # charge the enemy!!
 
         self.ct += 1
         return returnObj["function"]
