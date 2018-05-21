@@ -48,15 +48,17 @@ class MoveTest(base_agent.BaseAgent):
   obs = None
 
   def getCurrentLocation(self):
-      """
-        get player locations
-        returns [xcoord, ycoord] of current location
-      """
-      player_relative = self.obs.observation["screen"][_PLAYER_RELATIVE]
-      player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
-      return [int(player_x.mean()), int(player_y.mean())]
+    """
+      returns [xcoord, ycoord] of current player location
+    """
+    player_relative = self.obs.observation["screen"][_PLAYER_RELATIVE]
+    player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+    return [int(player_x.mean()), int(player_y.mean())]
 
   def getCurrentEnemyLocation(self):
+    """
+      returns [xcoord, ycoord] of current enemy location
+    """
     player_relative = self.obs.observation["screen"][_PLAYER_RELATIVE]
     player_y, player_x = (player_relative == _PLAYER_HOSTILE).nonzero()
     return [int(player_x.mean()), int(player_y.mean())]
