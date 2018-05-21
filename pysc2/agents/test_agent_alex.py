@@ -40,12 +40,12 @@ _UNIT_TYPE = features.SCREEN_FEATURES.unit_type.index
 
 
 class MoveTest(base_agent.BaseAgent):
-  ct = 0 # target step count
-  target = [0] * 2 # uninitialized target value
-  locations = [[int(10), int(10)], [int(60), int(15)], [int(60), int(50)], [int(10), int(50)]]
   maxMapWidth = 64
   maxMapHeight = 64
+  
   obs = None
+  target = [0] * 2 # uninitialized target value
+  ct = 0 # target step count
 
   def getCurrentLocation(self):
     """
@@ -169,16 +169,27 @@ class MoveTest(base_agent.BaseAgent):
       if returnObj["status"] is "ARRIVED_AT_TARGET":
         # arrived at target, update next target by incrementing location index (ct)
 
-        enemyLocation = self.getCurrentEnemyLocation()
-        print("enemy location = ", enemyLocation)
+        # AI API INTEGRATION WILL GO HERE
+        """
+          Move in a predefined square
+        """
+        squareLocations = [[int(10), int(10)], [int(60), int(15)], [int(60), int(50)], [int(10), int(50)]]
+        # self.setTargetDestination(squareLocations[self.ct % len(squareLocations)])
         
-        # AI API WILL GO HERE TO SET DESTINATION!!!!!
-        # self.setTargetDestination(self.locations[self.ct % len(self.locations)])
-        # movementDirection = random.choice(["NORTH","SOUTH", "EAST", "WEST", "NORTHEAST","SOUTHEAST","SOUTHWEST","NORTHWEST","STAY"])
-        # stepSize = random.choice(range(1, 25))
-        # self.movementStep(movementDirection, stepSize)
-        # print("MOVING", movementDirection, stepSize)
-        self.setTargetDestination(enemyLocation) # charge the enemy!!
+        """
+          Move a random distance in a random direction
+        """
+        movementDirectionActionSpace = ["NORTH","SOUTH", "EAST", "WEST", "NORTHEAST","SOUTHEAST","SOUTHWEST","NORTHWEST","STAY"]
+        movementDirection = random.choice(movementDirectionActionSpace)
+        stepSize = random.choice(range(1, 25))
+        self.movementStep(movementDirection, stepSize)
+        print("MOVING", movementDirection, stepSize)
+
+        """
+          Charge the enemy units
+        """
+        # enemyLocation = self.getCurrentEnemyLocation()
+        # self.setTargetDestination(enemyLocation) # charge the enemy!!
 
         self.ct += 1
         return returnObj["function"]
