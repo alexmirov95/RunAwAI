@@ -41,6 +41,8 @@ class RunAwAI(base_agent.BaseAgent):
   obs = None
   target = [0] * 2 # uninitialized target value
   ct = -1 # target step count
+  stepsToStart = 0
+  firstMove = False
 
   def getCurrentLocation(self):
     """
@@ -153,7 +155,7 @@ class RunAwAI(base_agent.BaseAgent):
     super(RunAwAI, self).step(obs)
     self.obs = obs
 
-    time.sleep(0.03) # time to slep per step
+    # time.sleep(0.03) # time to slep per step
 
     # checks to see if units can move, i.e. if they're selected
     if _MOVE_SCREEN in obs.observation["available_actions"]:
@@ -168,6 +170,7 @@ class RunAwAI(base_agent.BaseAgent):
           enemyLocation = self.getCurrentEnemyLocation()
           self.setTargetDestination(enemyLocation) # charge the enemy!!
         else:
+          self.firstMove = False
           # Move a discreet direction and distance
           movementDirectionActionSpace = ["NORTH","SOUTH", "EAST", "WEST", "NORTHEAST","SOUTHEAST","SOUTHWEST","NORTHWEST","STAY"]
           
@@ -183,15 +186,24 @@ class RunAwAI(base_agent.BaseAgent):
 
       elif returnObj["status"] is "MOVING_TO_TARGET":
         # enroute to target, do not update target
+
+        if self.firstMove:
+          # increment the stepsToStart to count the number of steps before engaging target
+          self.stepsToStart += 1
+
+        self.ct += 1 # increment step count
         return returnObj["function"]
 
     # select units
     else:
       if self.ct > 0:
         # because ct is initialized as -1, this is not the first selection of the first game
-        print("SURVIVED: ", self.ct, "steps.")
+        stepsSurvived = self.ct - self.stepsToStart
+        print("SURVIVED: ", stepsSurvived, "steps.")
+        self.stepsToStart = 0
       # reset count
       self.ct = 0
+      self.firstMove = True
       print("Starting new simulation.")
       # Select all units
       return actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])
