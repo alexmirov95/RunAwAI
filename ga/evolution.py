@@ -91,7 +91,6 @@ class EvolutionaryController():
         collect_data: [ False | True ] Toggle data collection
         printing: [ off | minimal | full ] How much printing should we do.
         """
-
         if maximize:
             optimal_fitness *= -1
         
@@ -108,6 +107,7 @@ class EvolutionaryController():
         heap = []
 
         best_fitness = float("inf")
+        best_indv = generation[0]
         
         for individual in generation:
             fitness = individual.fitness_function()
@@ -116,16 +116,29 @@ class EvolutionaryController():
                 fitness *= -1
             if fitness < best_fitness:
                 best_fitness = fitness
+                best_indv = individual
                 
             heapq.heappush(heap, (fitness, individual))
 
         while True:
             most_fit = []
+            avg_fit = 0
+            top_fit = heap[0][0]
+            
             for _ in range( breeding_constant ):
-                most_fit.append(heapq.heappop(heap))
+                pop = heapq.heappop(heap)
+                most_fit.append(pop)
+                avg_fit += pop[0]
+                if pop[0] < top_fit:
+                    top_fit = pop[0]
+
+            avg_fit /= breeding_constant
 
             #[print(fit[0], " ", fit[1].string) for fit in most_fit]
             #print()
+
+            if printing == 'full':
+                print("%d : %f : %f" % (generation_id, avg_fit, top_fit))
 
             heap = []
             
@@ -141,7 +154,9 @@ class EvolutionaryController():
                     fitness *= -1
                 if fitness < best_fitness:
                     best_fitness = fitness
-            
+                    best_indv = new_individual
+
+                #print(fitness)
                 heapq.heappush(heap, (fitness, new_individual))
             
             generation_id += 1
@@ -149,7 +164,10 @@ class EvolutionaryController():
             if generation_limit is not "inf":
                 if generation_id >= generation_limit:
                     stop_time = datetime.datetime.now() - start_time
-                    return
+                    if printing is not "off":
+                        print("Stopped in ", stop_time, " seconds on generation %d" % generation_id)
+                        print("Average fitness %f" % avg_fit)
+                    return best_indv
                 
             if best_fitness <= optimal_fitness:
                 stop_time = datetime.datetime.now() - start_time
@@ -157,4 +175,6 @@ class EvolutionaryController():
                 if printing is not "off":
                     print("Found optimal solution in %d generations in " %
                           generation_id, stop_time, " seconds")
-                return
+                return best_indv
+
+
