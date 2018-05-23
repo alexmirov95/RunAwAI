@@ -161,31 +161,24 @@ class RunAwAI(base_agent.BaseAgent):
       returnObj = self.moveToLocation()
 
       if returnObj["status"] is "ARRIVED_AT_TARGET":
-        # arrived at target, update next target by incrementing location index (ct)
+        # units arrived at target, update next target by incrementing location index (ct)
 
-        # AI API INTEGRATION WILL GO HERE
-        """
-          Move in a predefined square
-        """
-        # squareLocations = [[int(10), int(10)], [int(60), int(15)], [int(60), int(50)], [int(10), int(50)]]
-        # self.setTargetDestination(squareLocations[self.ct % len(squareLocations)])
-        
-        """
-          Move a random distance in a random direction
-        """
-        movementDirectionActionSpace = ["NORTH","SOUTH", "EAST", "WEST", "NORTHEAST","SOUTHEAST","SOUTHWEST","NORTHWEST","STAY"]
-        movementDirection = random.choice(movementDirectionActionSpace)
-        stepSize = random.choice(range(1, 25))
-        self.movementStep(movementDirection, stepSize)
-        # print("MOVING", movementDirection, stepSize)
+        if self.ct == 0:
+          # Move toward enemy units as first move to cause enemies to pursue
+          enemyLocation = self.getCurrentEnemyLocation()
+          self.setTargetDestination(enemyLocation) # charge the enemy!!
+        else:
+          # Move a discreet direction and distance
+          movementDirectionActionSpace = ["NORTH","SOUTH", "EAST", "WEST", "NORTHEAST","SOUTHEAST","SOUTHWEST","NORTHWEST","STAY"]
+          
+          # GENETIC ALGORITHM PICKS THESE 2 VARIABLES HERE
+          movementDirection = random.choice(movementDirectionActionSpace)
+          stepSize = random.choice(range(1, 25))
+          
+          # move the chosen distance and direction
+          self.movementStep(movementDirection, stepSize)
 
-        """
-          Charge the enemy units
-        """
-        # enemyLocation = self.getCurrentEnemyLocation()
-        # self.setTargetDestination(enemyLocation) # charge the enemy!!
-
-        self.ct += 1
+        self.ct += 1 # increment step count
         return returnObj["function"]
 
       elif returnObj["status"] is "MOVING_TO_TARGET":
@@ -194,9 +187,10 @@ class RunAwAI(base_agent.BaseAgent):
 
     # select units
     else:
-      # reset count
       if self.ct > 0:
-        print("Survived", self.ct, "steps.")
+        # because ct is initialized as -1, this is not the first selection of the first game
+        print("SURVIVED: ", self.ct, "steps.")
+      # reset count
       self.ct = 0
       print("Starting new simulation.")
       # Select all units
