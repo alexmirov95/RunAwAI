@@ -155,7 +155,7 @@ class RunAwAI(base_agent.BaseAgent):
     super(RunAwAI, self).step(obs)
     self.obs = obs
 
-    # time.sleep(0.03) # time to slep per step
+    time.sleep(0.01) # time to slep per step
 
     # checks to see if units can move, i.e. if they're selected
     if _MOVE_SCREEN in obs.observation["available_actions"]:
