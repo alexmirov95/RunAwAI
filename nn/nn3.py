@@ -81,6 +81,52 @@ class NeuralNetwork(object):
         return
 
 
+    def picklable(self):
+        data = {}
+        
+        data['g_dict'] = self.g_dict
+        data['input_size'] = self.input_size
+        data['input_labels'] = self.input_labels
+        data['output_size'] = self.output_size
+        data['output_labels'] = self.output_labels
+
+        data['h_function'] = self.h_function
+        data['o_function'] = self.o_function
+
+        data['node_id'] = self.node_id
+
+        data['struct_mut_con_rate'] = self.struct_mut_con_rate
+        data['struct_mut_new_rate'] = self.struct_mut_new_rate
+        data['struct_mut_rm_rate'] = self.struct_mut_rm_rate
+        data['n_struct_mut_rate'] = self.n_struct_mut_rate
+        data['n_struct_mut_minimizer'] = self.n_struct_mut_minimizer
+
+        data['learning_constant'] = self.learning_constant
+
+        return data
+
+
+    def build_from_pickle(self, data):
+        self.g_dict = data['g_dict']
+        self.input_size = data['input_size']
+        self.input_labels = data['input_labels']
+        self.output_size = data['output_size']
+        self.output_labels = data['output_labels']
+
+        self.h_function = data['h_function']
+        self.o_function = data['o_function']
+
+        self.node_id = data['node_id']
+
+        self.struct_mut_con_rate = data['struct_mut_con_rate']
+        self.struct_mut_new_rate = data['struct_mut_new_rate']
+        self.struct_mut_rm_rate = data['struct_mut_rm_rate']
+        self.n_struct_mut_rate = data['n_struct_mut_rate']
+        self.n_struct_mut_minimizer = data['n_struct_mut_minimizer']
+        
+        self.learning_constant = data['learning_constant']
+
+
     def print_connections(self):
         """ Prints all of the connections in the neural network.
 

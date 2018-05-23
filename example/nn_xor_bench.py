@@ -3,6 +3,7 @@
 
 if __name__ == "__main__":
     import sys
+    import pickle
     sys.path.insert(0, './../')
 
     from ga.individual import Individual
@@ -116,4 +117,15 @@ if __name__ == "__main__":
 
     # Print the results of the most fit individual on the benchmark
     print("\nResults from most fit network")
+    print([list(nn.network.feed_forward(a).values())[0] for a in [{'a': 0,'b': 0}, {'a': 0, 'b':1}, {'a':1, 'b':0}, {'a': 1, 'b':1}]])
+
+    picklefile = open('pfile', 'wb')
+    pickle.dump(nn.network.picklable(), picklefile)
+    picklefile.close()
+
+    picklefile = open('pfile', 'rb')
+    data = pickle.load(picklefile)
+    picklefile.close
+
+    nn.network.build_from_pickle(data)
     print([list(nn.network.feed_forward(a).values())[0] for a in [{'a': 0,'b': 0}, {'a': 0, 'b':1}, {'a':1, 'b':0}, {'a': 1, 'b':1}]])
