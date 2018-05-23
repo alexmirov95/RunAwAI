@@ -6,7 +6,7 @@
   Will run away from enemy units.
 
   TEST USAGE:
-  python -m pysc2.bin.agent --map DefeatRoaches --agent pysc2.agents.RunAwAI_Agent.RunAwAI
+    python -m pysc2.bin.agent --map DefeatRoaches --agent pysc2.agents.RunAwAI_Agent.RunAwAI
 """
 
 from __future__ import absolute_import
@@ -40,7 +40,7 @@ class RunAwAI(base_agent.BaseAgent):
   
   obs = None
   target = [0] * 2 # uninitialized target value
-  ct = 0 # target step count
+  ct = -1 # target step count
 
   def getCurrentLocation(self):
     """
@@ -69,7 +69,6 @@ class RunAwAI(base_agent.BaseAgent):
       function to invoke movement.
     """
     target = self.target
-    sleepTime = 0.03
     # get current location
     currentLocation = self.getCurrentLocation()
     # how close the units will get to the destination before selecting a new target destination
@@ -78,7 +77,6 @@ class RunAwAI(base_agent.BaseAgent):
         (abs(currentLocation[1] - target[1]) >= distToTarget)) and 
         (self.ct > 0)):
       # has not reached (or at least gotten close to) destination
-      time.sleep(sleepTime)
       return {
         "function": actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, target]),
         "status": "MOVING_TO_TARGET"
@@ -86,7 +84,6 @@ class RunAwAI(base_agent.BaseAgent):
     else:
       # close enough to destination for a new waypoint
       # set new target destination waypoint
-      time.sleep(sleepTime)
       return {
         "function": actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, target]),
         "status": "ARRIVED_AT_TARGET"
@@ -156,6 +153,8 @@ class RunAwAI(base_agent.BaseAgent):
     super(RunAwAI, self).step(obs)
     self.obs = obs
 
+    time.sleep(0.03) # time to slep per step
+
     # checks to see if units can move, i.e. if they're selected
     if _MOVE_SCREEN in obs.observation["available_actions"]:
       # call move function
@@ -168,7 +167,7 @@ class RunAwAI(base_agent.BaseAgent):
         """
           Move in a predefined square
         """
-        squareLocations = [[int(10), int(10)], [int(60), int(15)], [int(60), int(50)], [int(10), int(50)]]
+        # squareLocations = [[int(10), int(10)], [int(60), int(15)], [int(60), int(50)], [int(10), int(50)]]
         # self.setTargetDestination(squareLocations[self.ct % len(squareLocations)])
         
         """
@@ -178,7 +177,7 @@ class RunAwAI(base_agent.BaseAgent):
         movementDirection = random.choice(movementDirectionActionSpace)
         stepSize = random.choice(range(1, 25))
         self.movementStep(movementDirection, stepSize)
-        print("MOVING", movementDirection, stepSize)
+        # print("MOVING", movementDirection, stepSize)
 
         """
           Charge the enemy units
@@ -196,8 +195,9 @@ class RunAwAI(base_agent.BaseAgent):
     # select units
     else:
       # reset count
+      if self.ct > 0:
+        print("Survived", self.ct, "steps.")
       self.ct = 0
       print("Starting new simulation.")
       # Select all units
-      print("Selecting all units")
       return actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])
