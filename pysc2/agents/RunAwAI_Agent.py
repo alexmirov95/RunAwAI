@@ -15,11 +15,16 @@ from __future__ import print_function
 
 import numpy
 import time
+import pickle
 import random
 
 from pysc2.agents import base_agent
 from pysc2.lib import actions
 from pysc2.lib import features
+
+import sys
+sys.path.insert(0, './../..')
+from nn.nn3 import NeuralNetwork
 
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _PLAYER_FRIENDLY = 1
@@ -38,11 +43,13 @@ class RunAwAI(base_agent.BaseAgent):
   maxMapWidth = 64
   maxMapHeight = 64
   
+  nn = None
   obs = None
   target = [0] * 2 # uninitialized target value
   ct = -1 # target step count
   stepsToStart = 0
   firstMove = False
+  simCt = 0 # simulation count
 
   def getCurrentLocation(self):
     """
@@ -155,7 +162,17 @@ class RunAwAI(base_agent.BaseAgent):
     super(RunAwAI, self).step(obs)
     self.obs = obs
 
-    time.sleep(0.01) # time to slep per step
+    # time.sleep(0.01) # time to slep per step
+    if self.ct < 0:
+      # unpickle nn file
+      picklefile = open('picklepipe', 'rb')
+      data = pickle.load(picklefile)
+      picklefile.close
+
+      self.nn = NeuralNetwork(None, None, None, None)
+      self.nn.build_from_pickle(data)
+
+
 
     # checks to see if units can move, i.e. if they're selected
     if _MOVE_SCREEN in obs.observation["available_actions"]:
@@ -172,12 +189,23 @@ class RunAwAI(base_agent.BaseAgent):
         else:
           self.firstMove = False
           # Move a discreet direction and distance
-          movementDirectionActionSpace = ["NORTH","SOUTH", "EAST", "WEST", "NORTHEAST","SOUTHEAST","SOUTHWEST","NORTHWEST","STAY"]
-          
-          # GENETIC ALGORITHM PICKS THESE 2 VARIABLES HERE
+          movementDirectionActionSpace = ["NORTH", "SOUTH", "EAST", "WEST", "NORTHEAST","SOUTHEAST","SOUTHWEST","NORTHWEST","STAY"]
+          enemyLocation = self.getCurrentEnemyLocation()
+          currentLocation = self.getCurrentLocation()
+
+          """
+            neural network input array:
+            [maxmap_x, maxmap_y, enemy_x, enemy_y, unit_x, unit_y]
+          """
+          if self.ct > 1:
+            nnInputArr = [self.maxMapWidth, self.maxMapHeight, enemyLocation[0], enemyLocation[1], currentLocation[0], currentLocation[1]]
+            print("nnInputArr = ", nnInputArr)
+            nnOutputArr = list(self.nn.feed_forward(nnInputArr).values())[0]
+            print("nnOutputArr = ", nnOutputArr)
+
           movementDirection = random.choice(movementDirectionActionSpace)
           stepSize = random.choice(range(1, 25))
-          
+
           # move the chosen distance and direction
           self.movementStep(movementDirection, stepSize)
 
@@ -196,14 +224,30 @@ class RunAwAI(base_agent.BaseAgent):
 
     # select units
     else:
+      print("got here to the selection part!!!!!!!!")
       if self.ct > 0:
         # because ct is initialized as -1, this is not the first selection of the first game
         stepsSurvived = self.ct - self.stepsToStart
         print("SURVIVED: ", stepsSurvived, "steps.")
         self.stepsToStart = 0
+      else:
+        # first time running first simulation
+        print("FIRST TIME RUNNING!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        # # unpickle nn file
+        # picklefile = open('picklepipe', 'rb')
+        # data = pickle.load(picklefile)
+        # picklefile.close
+
+        # self.nn = NeuralNetwork(None, None, None, None)
+        # self.nn.build_from_pickle(data)
+
+      if self.simCt == 55:
+        print("LAST SIM!!!!!!!!!!!!!!!!!!!!")
+
       # reset count
       self.ct = 0
       self.firstMove = True
-      print("Starting new simulation.")
+      print("Starting simulation ", self.simCt)
+      self.simCt += 1
       # Select all units
       return actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])

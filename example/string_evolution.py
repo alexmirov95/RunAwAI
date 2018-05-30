@@ -8,13 +8,13 @@ sys.path.insert(0, './../')
 if __name__ == "__main__":
     import math
     import random
-    
-    from src.ga.individual import Individual
-    from src.ga.evolution import EvolutionaryController
-    
+
+    from ga import Individual
+    from ga import EvolutionaryController
+
     # Test with the string example
     string = input("Enter a string: ")
-    
+
     class String(Individual):
         def __init__(self):
             self.length = len(string)
@@ -46,7 +46,7 @@ if __name__ == "__main__":
             for key in fit_dict:
                 if key in test_dict:
                     fitness -= fit_dict[key]
-            
+
             return fitness
 
 
@@ -55,7 +55,7 @@ if __name__ == "__main__":
             fitB = parent_tuple[1][0]
             A = parent_tuple[0][1]
             B = parent_tuple[1][1]
-            
+
             if fitA > fitB:
                 child = list(A.string)
             else:
@@ -67,7 +67,7 @@ if __name__ == "__main__":
                     child[rand_ind] = A.string[rand_ind]
                 else:
                     child[rand_ind] = B.string[rand_ind]
-                                                
+
             return C.assign_string(''.join(child))
 
 
@@ -86,7 +86,7 @@ if __name__ == "__main__":
             while len(parent) < self.length:
                 sample_size = min(self.length - len(parent), len(self.alphabet))
                 parent.extend(random.sample(self.alphabet, sample_size))
-        
+
             self.string = ''.join(parent)
 
 

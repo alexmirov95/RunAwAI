@@ -2,14 +2,11 @@
 # individual.py
 #
 
-import abc
-
-class Individual(abc.ABC):
+class Individual(object):
     """
     The Individual class must be implemented by the user to run evolutionary
     trials. Must implement all methods to use the EvolutionaryController class.
     """
-    @abc.abstractmethod
     def __init__(self):
         """
         Take some standardized input to form a new individual, whatever the
@@ -22,7 +19,6 @@ class Individual(abc.ABC):
         return False
     
 
-    @abc.abstractmethod
     def individual_print(self):
         """
         Print an individual's data in a working format.
@@ -31,7 +27,6 @@ class Individual(abc.ABC):
         """
         pass
 
-    @abc.abstractmethod
     def fitness_function(self):
         """
         Assigns a "score" to the individual. This can be implemented with either
@@ -43,7 +38,6 @@ class Individual(abc.ABC):
         """
         pass
 
-    @abc.abstractmethod
     def breed_parents(self, parent_tuple, child, reproduction_constant):
         """
         This method does not act on the individual itself, instead, it takes a
@@ -62,7 +56,6 @@ class Individual(abc.ABC):
         """
         pass
 
-    @abc.abstractmethod
     def mutate(self, mutation_constant):
         """
         Mutates the Individual object
@@ -70,7 +63,6 @@ class Individual(abc.ABC):
         """
         pass
 
-    @abc.abstractmethod
     def generate_random(self):
         """
         Changes the instance to a random permutation of the Individual class.
