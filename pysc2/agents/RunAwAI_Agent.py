@@ -197,17 +197,23 @@ class RunAwAI(base_agent.BaseAgent):
             neural network input array:
             [maxmap_x, maxmap_y, enemy_x, enemy_y, unit_x, unit_y]
           """
+          movementDirection = 'STAY'
           if self.ct > 1:
-            nnInputArr = [self.maxMapWidth, self.maxMapHeight, enemyLocation[0], enemyLocation[1], currentLocation[0], currentLocation[1]]
+            nnInputArr = [enemyLocation[0] / self.maxMapWidth, enemyLocation[1] / self.maxMapHeight, currentLocation[0] / self.maxMapWidth, currentLocation[1] / self.maxMapHeight]
             print("nnInputArr = ", nnInputArr)
             nnInputDict = {}
-            for label, value in zip(['maxmap_x', 'maxmap_y', 'enemy_x', 'enemy_y', 'unit_x', 'unit_y'], nnInputArr):
+            for label, value in zip(['enemy_x', 'enemy_y', 'unit_x', 'unit_y'], nnInputArr):
               nnInputDict[label] = value
               
-            nnOutputDict = list(self.nn.feed_forward(nnInputDict).values())[0]
+            nnOutputDict = self.nn.feed_forward(nnInputDict)
+            self.nn.non_structural_mutation()
             print("nnOutputDict = ", nnOutputDict)
 
-          movementDirection = random.choice(movementDirectionActionSpace)
+            maximum = -1000
+            for key in nnOutputDict.keys():
+              if nnOutputDict[key] > maximum:
+                movementDirection = key
+              
           stepSize = random.choice(range(1, 25))
 
           # move the chosen distance and direction
