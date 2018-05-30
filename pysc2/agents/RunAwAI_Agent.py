@@ -137,12 +137,11 @@ class RunAwAI(base_agent.BaseAgent):
     elif direction is "NORTHWEST":
       newTarget[0] -= distance
       newTarget[1] += distance
-
     elif direction is "STAY":
       # no movement from current location
       newTarget = newTarget
     else:
-      print("Invalid Direction")
+      print("Invalid Direction:", direction)
 
     # cap map bounds of new target within map dimensions
     borderLimit = 4 # target will not be set within borderLimit distance of the edge of map
@@ -162,7 +161,7 @@ class RunAwAI(base_agent.BaseAgent):
     super(RunAwAI, self).step(obs)
     self.obs = obs
 
-    # time.sleep(0.01) # time to slep per step
+    time.sleep(0.01) # time to slep per step
     if self.ct < 0:
       # unpickle nn file
       picklefile = open('picklepipe', 'rb')
@@ -200,24 +199,28 @@ class RunAwAI(base_agent.BaseAgent):
           movementDirection = 'STAY'
           if self.ct > 1:
             nnInputArr = [enemyLocation[0] / self.maxMapWidth, enemyLocation[1] / self.maxMapHeight, currentLocation[0] / self.maxMapWidth, currentLocation[1] / self.maxMapHeight]
-            print("nnInputArr = ", nnInputArr)
+            # print("nnInputArr = ", nnInputArr)
             nnInputDict = {}
             for label, value in zip(['enemy_x', 'enemy_y', 'unit_x', 'unit_y'], nnInputArr):
               nnInputDict[label] = value
               
             nnOutputDict = self.nn.feed_forward(nnInputDict)
             self.nn.non_structural_mutation()
-            print("nnOutputDict = ", nnOutputDict)
 
-            maximum = -1000
+            dirCount = 0
+            maximum = float(-1000)
             for key in nnOutputDict.keys():
-              if nnOutputDict[key] > maximum:
-                movementDirection = key
+              if float(nnOutputDict[key]) > maximum:
+                movementDirection = movementDirectionActionSpace[dirCount]
+                maximum = nnOutputDict[key]
+              dirCount += 1
               
-          stepSize = random.choice(range(1, 25))
+          # stepSize = random.choice(range(1, 25))
+          stepSize = 10
+
 
           # move the chosen distance and direction
-          self.movementStep(movementDirection, stepSize)
+          self.movementStep(str(movementDirection), stepSize)
 
         self.ct += 1 # increment step count
         return returnObj["function"]
