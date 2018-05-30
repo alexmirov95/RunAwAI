@@ -237,15 +237,21 @@ class RunAwAI(base_agent.BaseAgent):
 
     # select units
     else:
-      print("got here to the selection part!!!!!!!!")
       if self.ct > 0:
         # because ct is initialized as -1, this is not the first selection of the first game
         stepsSurvived = self.ct - self.stepsToStart
         print("SURVIVED: ", stepsSurvived, "steps.")
+
+        # Pickle fitness (steps survived)
+        picklefile = open("lastFitness.p", "wb")
+        pickle.dump({ "fitness": stepsSurvived }, picklefile)
+        picklefile.close()
+
+
         self.stepsToStart = 0
       else:
         # first time running first simulation
-        print("FIRST TIME RUNNING!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print("FIRST TIME RUNNING")
         # # unpickle nn file
         # picklefile = open('picklepipe', 'rb')
         # data = pickle.load(picklefile)
