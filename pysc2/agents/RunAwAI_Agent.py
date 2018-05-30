@@ -169,7 +169,7 @@ class RunAwAI(base_agent.BaseAgent):
       data = pickle.load(picklefile)
       picklefile.close
 
-      self.nn = NeuralNetwork(None, None, None, None)
+      self.nn = NeuralNetwork(None, None, ['maxmap_x', 'maxmap_y', 'enemy_x', 'enemy_y', 'unit_x', 'unit_y'], None)
       self.nn.build_from_pickle(data)
 
 
@@ -200,8 +200,12 @@ class RunAwAI(base_agent.BaseAgent):
           if self.ct > 1:
             nnInputArr = [self.maxMapWidth, self.maxMapHeight, enemyLocation[0], enemyLocation[1], currentLocation[0], currentLocation[1]]
             print("nnInputArr = ", nnInputArr)
-            nnOutputArr = list(self.nn.feed_forward(nnInputArr).values())[0]
-            print("nnOutputArr = ", nnOutputArr)
+            nnInputDict = {}
+            for label, value in zip(['maxmap_x', 'maxmap_y', 'enemy_x', 'enemy_y', 'unit_x', 'unit_y'], nnInputArr):
+              nnInputDict[label] = value
+              
+            nnOutputDict = list(self.nn.feed_forward(nnInputDict).values())[0]
+            print("nnOutputDict = ", nnOutputDict)
 
           movementDirection = random.choice(movementDirectionActionSpace)
           stepSize = random.choice(range(1, 25))

@@ -36,6 +36,7 @@ if __name__ == "__main__":
             fitness = 0
 
             picklefile = open('picklepipe', 'wb')
+            self.network.input_labels = ['maxmap_x', 'maxmap_y', 'enemy_x', 'enemy_y', 'unit_x', 'unit_y']
             pickle.dump(self.network.picklable(), picklefile)
             picklefile.close()
 
@@ -84,7 +85,7 @@ if __name__ == "__main__":
             the magic numbers in the initialization to get different behavior
             out of our network."""
             
-            self.network = NeuralNetwork(6, 9, ['a', 'b', 'c', 'd', 'e', 'f'], ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+            self.network = NeuralNetwork(6, 9, ['maxmap_x', 'maxmap_y', 'enemy_x', 'enemy_y', 'unit_x', 'unit_y'], ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
                                           struct_mut_new_rate=0.0,
                                           struct_mut_con_rate=0.2,
                                           n_struct_mut_rate=0.2)
