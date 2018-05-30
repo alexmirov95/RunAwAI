@@ -6,15 +6,15 @@
 # not a particular point is above or below the graph of a line.
 
 import sys
-sys.path.insert(0, './../')
+sys.path.append('../')
 
 import math
 import random
-    
-from ga.individual import Individual
-from ga.evolution import EvolutionaryController
-from nn.nn import NeuralNetwork
-from nn.neuron import (
+
+from ga import Individual
+from ga import EvolutionaryController
+from nn import NeuralNetwork
+from nn import (
     NeuralNetworkInputNeuron,
     NeuralNetworkOutputNeuron,
     NeuralNetworkHiddenNeuron,
@@ -103,7 +103,7 @@ class NNClassification(NN):
             y_coord = random.uniform(
                 self.test_function.evaluate(MIN_TEST_VALUE),
                 self.test_function.evaluate(MAX_TEST_VALUE))
-            
+
             if y_coord > self.test_function.evaluate(x_coord):
                 above = True
             else:
@@ -148,13 +148,13 @@ class NNClassification(NN):
                 rand = i
                 while rand is i:
                     rand = random.randint(0, self.hidden_size - 1)
-                    
+
                 self.hidden_layer[i].add_connection(self.hidden_layer[rand],
                                                     random.uniform(-1, 1))
 
     def test(self):
         pass
-    
+
 
 if __name__ == "__main__":
     function = input("Select a function type: ")
