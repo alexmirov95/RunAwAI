@@ -169,7 +169,7 @@ class RunAwAI(base_agent.BaseAgent):
     super(RunAwAI, self).step(obs)
     self.obs = obs
 
-    time.sleep(0.01) # time to slep per step
+    # time.sleep(0.01) # time to slep per step
     if self.ct < 0:
       # unpickle nn file
       picklefile = open('picklepipe', 'rb')
@@ -251,17 +251,17 @@ class RunAwAI(base_agent.BaseAgent):
         self.fitnessHistory.append(stepsSurvived)
         print("SURVIVED: ", stepsSurvived, "steps.")
 
-        self.stepsToStart = 0
-
-      if self.simCt == 55:
-        # Abitrary last simulation
         # Pickle fitness (steps survived)
         averageFitness = self.calculateAverageFitness()
-        print("Last simulation. Pickling average fitness = ", averageFitness)
         picklefile = open("lastFitness.p", "wb")
         pickle.dump({ "fitness": averageFitness }, picklefile)
         picklefile.close()
 
+        self.stepsToStart = 0
+
+      # if self.simCt == 55:
+      #   # Abitrary last simulation
+      #   print("Last simulation")
 
       # reset count
       self.ct = 0
