@@ -153,10 +153,10 @@ class RunAwAI(base_agent.BaseAgent):
 
     # cap map bounds of new target within map dimensions
     borderLimit = 4 # target will not be set within borderLimit distance of the edge of map
-    if newTarget[0] >= self.maxMapHeight - borderLimit:
-      newTarget[0] = self.maxMapHeight - borderLimit
-    if newTarget[1] >= self.maxMapWidth - borderLimit:
-      newTarget[1] = self.maxMapWidth - borderLimit
+    if newTarget[0] >= (self.maxMapHeight - borderLimit):
+      newTarget[0] = (self.maxMapHeight - borderLimit)
+    if newTarget[1] >= (self.maxMapWidth - borderLimit):
+      newTarget[1] = (self.maxMapWidth - borderLimit)
     if newTarget[0] <= borderLimit:
       newTarget[0] = borderLimit
     if newTarget[1] <= borderLimit:
@@ -258,10 +258,6 @@ class RunAwAI(base_agent.BaseAgent):
         picklefile.close()
 
         self.stepsToStart = 0
-
-      # if self.simCt == 55:
-      #   # Abitrary last simulation
-      #   print("Last simulation")
 
       # reset count
       self.ct = 0
