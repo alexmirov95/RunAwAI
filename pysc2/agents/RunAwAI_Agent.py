@@ -50,6 +50,14 @@ class RunAwAI(base_agent.BaseAgent):
   stepsToStart = 0
   firstMove = False
   simCt = 0 # simulation count
+  fitnessHistory = [] # number of steps survived each simulation
+
+  def calculateAverageFitness(self):
+    """
+    Returns the average number of steps survived for the entire round
+    of simulations.
+    """
+    return sum(self.fitnessHistory) / len(self.fitnessHistory)
 
   def getCurrentLocation(self):
     """
@@ -240,28 +248,20 @@ class RunAwAI(base_agent.BaseAgent):
       if self.ct > 0:
         # because ct is initialized as -1, this is not the first selection of the first game
         stepsSurvived = self.ct - self.stepsToStart
+        self.fitnessHistory.append(stepsSurvived)
         print("SURVIVED: ", stepsSurvived, "steps.")
 
-        # Pickle fitness (steps survived)
-        picklefile = open("lastFitness.p", "wb")
-        pickle.dump({ "fitness": stepsSurvived }, picklefile)
-        picklefile.close()
-
-
         self.stepsToStart = 0
-      else:
-        # first time running first simulation
-        print("FIRST TIME RUNNING")
-        # # unpickle nn file
-        # picklefile = open('picklepipe', 'rb')
-        # data = pickle.load(picklefile)
-        # picklefile.close
-
-        # self.nn = NeuralNetwork(None, None, None, None)
-        # self.nn.build_from_pickle(data)
 
       if self.simCt == 55:
-        print("LAST SIM!!!!!!!!!!!!!!!!!!!!")
+        # Abitrary last simulation
+        # Pickle fitness (steps survived)
+        averageFitness = self.calculateAverageFitness()
+        print("Last simulation. Pickling average fitness = ", averageFitness)
+        picklefile = open("lastFitness.p", "wb")
+        pickle.dump({ "fitness": averageFitness }, picklefile)
+        picklefile.close()
+
 
       # reset count
       self.ct = 0
