@@ -172,7 +172,7 @@ class RunAwAI(base_agent.BaseAgent):
     # time.sleep(0.01) # time to slep per step
     if self.ct < 0:
       # unpickle nn file
-      picklefile = open('picklepipe', 'rb')
+      picklefile = open('picklepipe.pickle', 'rb')
       data = pickle.load(picklefile)
       picklefile.close
 
@@ -253,7 +253,7 @@ class RunAwAI(base_agent.BaseAgent):
 
         # Pickle fitness (steps survived)
         averageFitness = self.calculateAverageFitness()
-        picklefile = open("lastFitness.p", "wb")
+        picklefile = open("lastFitness.pickle", "wb")
         pickle.dump({ "fitness": averageFitness }, picklefile)
         picklefile.close()
 
