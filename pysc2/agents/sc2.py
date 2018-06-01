@@ -37,13 +37,13 @@ if __name__ == "__main__":
             
             fitness = 0
 
-            picklefile = open('picklepipe', 'wb')
+            picklefile = open('picklepipe.pickle', 'wb')
             pickle.dump(self.network.picklable(), picklefile)
             picklefile.close()
 
             subprocess.call(['./start.sh'])
 
-            picklefile = open('lastFitness.p', 'r')
+            picklefile = open('lastFitness.pickle', 'r')
             data = pickle.load(picklefile)
             picklefile.close
 
@@ -103,6 +103,7 @@ if __name__ == "__main__":
 
     # How many iterations to run?
     gen_lim = int(input("How many iterations: "))
+    gen_lim -= 1
     
     # Run the evolution simulation and return the most fit individual from the
     print("Running evolution...")
