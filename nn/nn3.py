@@ -322,7 +322,6 @@ class NeuralNetwork(object):
 
                 seen.append(cur_id)
 
-        print(outputs)
         return outputs
 
 

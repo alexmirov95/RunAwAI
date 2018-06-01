@@ -1,6 +1,8 @@
 # Originally written by Kyle Chickering, Taaha Chaudhry, Xin Jin, Alex Mirov and
 # Simon Wu for ECS 170 @ UC Davis, Spring 2018.
 
+OPTIMAL_FITNESS = 500
+
 if __name__ == "__main__":
     import pickle
     import subprocess
@@ -41,18 +43,12 @@ if __name__ == "__main__":
 
             subprocess.call(['./start.sh'])
 
-            exit()
+            picklefile = open('lastFitness.p', 'r')
+            data = pickle.load(picklefile)
+            picklefile.close
+            return OPTIMAL_FITNESS - 1*float(data['fitness'])
 
-            fitness = 1 - run_simulation(self.network)
-            
-            if self.network.node_id > 10:
-                fitness += 10*self.network.node_id
-            elif self.network.node_id < 10:
-                fitness += 10*(5 - self.network.node_id)
-                
-            return fitness
-
-
+        
         def breed_parents(self, parent_tuple, child, reproduction_constant):
             """ Simply calls the network's breeding function to generate a 
             child. """
@@ -85,9 +81,9 @@ if __name__ == "__main__":
             out of our network."""
             
             self.network = NeuralNetwork(4, 9, ['enemy_x', 'enemy_y', 'unit_x', 'unit_y'], ["NORTH", "SOUTH", "EAST", "WEST", "NORTHEAST","SOUTHEAST","SOUTHWEST","NORTHWEST","STAY"],
-                                          struct_mut_new_rate=0.0,
-                                          struct_mut_con_rate=0.2,
-                                          n_struct_mut_rate=1,
+                                         struct_mut_new_rate=0.2,
+                                         struct_mut_con_rate=0.2,
+                                         n_struct_mut_rate=0.2,
                                          hidden_function_type='sigmoid')
 
             self.network.build_network()
@@ -109,4 +105,4 @@ if __name__ == "__main__":
     
     # Run the evolution simulation and return the most fit individual from the
     # final iteration
-    nn = EC.run_evolution(10, 1, 1, printing='minimal', generation_limit=gen_lim)
+    nn = EC.run_evolution(5, 1, 1, printing='minimal', generation_limit=gen_lim)
