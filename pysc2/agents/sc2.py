@@ -46,7 +46,8 @@ if __name__ == "__main__":
             picklefile = open('lastFitness.p', 'r')
             data = pickle.load(picklefile)
             picklefile.close
-            return OPTIMAL_FITNESS - 1*float(data['fitness'])
+
+            return 500 - (1*float(data['fitness']) + 0.25 * float(data['stdDev']))
 
         
         def breed_parents(self, parent_tuple, child, reproduction_constant):
@@ -104,5 +105,7 @@ if __name__ == "__main__":
     gen_lim = int(input("How many iterations: "))
     
     # Run the evolution simulation and return the most fit individual from the
+    print("Running evolution...")
     # final iteration
-    nn = EC.run_evolution(5, 1, 1, printing='minimal', generation_limit=gen_lim)
+    nn = EC.run_evolution(3, 1, 1, printing='full', 
+        generation_limit=gen_lim)

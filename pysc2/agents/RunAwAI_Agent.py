@@ -51,6 +51,7 @@ class RunAwAI(base_agent.BaseAgent):
   firstMove = False
   simCt = 0 # simulation count
   fitnessHistory = [] # number of steps survived each simulation
+  numEpisodes = 10 # number of episodes per simulation to run
 
   def calculateAverageFitness(self):
     """
@@ -179,6 +180,21 @@ class RunAwAI(base_agent.BaseAgent):
       self.nn = NeuralNetwork(None, None, ['maxmap_x', 'maxmap_y', 'enemy_x', 'enemy_y', 'unit_x', 'unit_y'], None)
       self.nn.build_from_pickle(data)
 
+    if self.simCt == self.numEpisodes:
+      # End Simulation after self.numEpisodes episodes
+      averageFitness = self.calculateAverageFitness()
+      stdDev = numpy.std(self.fitnessHistory)
+      print("Ending Simulation.  AvgFitness =", averageFitness, "   StdDev =", stdDev)
+      
+      # Pickle fitness (steps survived)
+      picklefile = open("lastFitness.p", "wb")
+      pickle.dump({ 
+        "fitness": averageFitness,
+        "stdDev": stdDev
+      }, picklefile)
+      picklefile.close()
+      # Exit
+      exit(0)
 
 
     # checks to see if units can move, i.e. if they're selected
@@ -251,13 +267,8 @@ class RunAwAI(base_agent.BaseAgent):
         self.fitnessHistory.append(stepsSurvived)
         print("SURVIVED: ", stepsSurvived, "steps.")
 
-        # Pickle fitness (steps survived)
-        averageFitness = self.calculateAverageFitness()
-        picklefile = open("lastFitness.p", "wb")
-        pickle.dump({ "fitness": averageFitness }, picklefile)
-        picklefile.close()
-
         self.stepsToStart = 0
+
 
       # reset count
       self.ct = 0

@@ -134,11 +134,24 @@ class EvolutionaryController():
 
             avg_fit /= breeding_constant
 
-            #[print(fit[0], " ", fit[1].string) for fit in most_fit]
-            #print()
-
             if printing == 'full':
-                print("%d : %f : %f" % (generation_id, avg_fit, top_fit))
+                print("Generation #: %d    Avg Fitness: %f     Top Fitness: %f" % (generation_id, avg_fit, top_fit))
+
+            if generation_limit is not "inf":
+                if generation_id >= generation_limit:
+                    stop_time = datetime.datetime.now() - start_time
+                    if printing is not "off":
+                        print("Stopped in ", stop_time, " seconds on generation %d" % generation_id)
+                        print("Average fitness %f" % avg_fit)
+                    return best_indv
+                
+            if best_fitness <= optimal_fitness:
+                stop_time = datetime.datetime.now() - start_time
+                
+                if printing is not "off":
+                    print("Found optimal solution in %d generations in " %
+                          generation_id, stop_time, " seconds")
+                return best_indv
 
             heap = []
             
@@ -161,20 +174,6 @@ class EvolutionaryController():
             
             generation_id += 1
             
-            if generation_limit is not "inf":
-                if generation_id >= generation_limit:
-                    stop_time = datetime.datetime.now() - start_time
-                    if printing is not "off":
-                        print("Stopped in ", stop_time, " seconds on generation %d" % generation_id)
-                        print("Average fitness %f" % avg_fit)
-                    return best_indv
-                
-            if best_fitness <= optimal_fitness:
-                stop_time = datetime.datetime.now() - start_time
-                
-                if printing is not "off":
-                    print("Found optimal solution in %d generations in " %
-                          generation_id, stop_time, " seconds")
-                return best_indv
+            
 
 
