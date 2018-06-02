@@ -91,7 +91,8 @@ $\blacksquare$
 
 \begin{multicols}{2}
 \section{Introduction}
-Since AlphaGo's defeat of the Go champion Ke Jie, the artificial intelligence community has
+Since AlphaGo's defeat of the Go champion Ke Jie, the artificial intelligence
+community has
 been looking for the next problem domain to apply learning techniques to. A
 potentially surprising candidate for artificial intelligence testing has
 emerged in the form of real time strategy games. Real time strategy games work
@@ -221,9 +222,10 @@ and return an output vector of directions.
 \begin{align}
   \bm{V} = \mathcal{N}(\bm{I})
 \end{align}
-We choose the next action according to the equation:
+Where $\mathcal{N}$ is the function computed by our neural network. We choose
+the next action according to the equation:
 \begin{align}
-  a_n = \max_{v \in \bm{V}} v
+  a_n = \max_{v \in \bm{V}} \: v
 \end{align}
 This input vector is flexible, and allows us to tweak the information that we
 feed to the neural network. Additionally, while the output space we used
@@ -326,11 +328,19 @@ where $\bm{\sigma}$ is a random variable from a Gaussian distribution.
 \subsection{PySC2 Agent Interface}
 
 \section{Results}
+%% TODO: Talk about choice of hyper paramters, population size, episode count
+%% mutation constants, eta in fitness function
 
 \section{Conclusion}
 Different selection types?
+
 \subsection{Improvements}
+
 \subsection{Future Work}
+This project can certainly be extended in many ways, for example, we could
+extend the output vectors to include offinsive manuvering by our agent, and
+train the agent to be agressive by considering the numebr of adversaries killed
+by our agent during the simulation.
 
 \end{multicols}
 
