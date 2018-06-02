@@ -198,7 +198,7 @@ command).
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.45\textwidth]{chart}
+%\includegraphics[width=0.45\textwidth]{chart}
 \begin{changemargin}{0.15in}{0.15in}
   \caption{Control and data flow through the Run AwAI controller.}
 \end{changemargin}
@@ -325,7 +325,30 @@ where $\bm{\sigma}$ is a random variable from a Gaussian distribution.
 
 \subsection{Controller}
 
-\subsection{PySC2 Agent Interface}
+\subsection{PySC2 Interface}
+
+The learning environment was based on the existing mini game environments from the PySC2 API. Specifically, our learning environment was built on top of the DefeatRoaches mini game.
+
+The maps were retrieved from Deepmind's PySC2 Github repository and 
+put into the StarcraftII/Maps/ directory.
+
+All maps were edited in the SCII map editor. 
+
+\subsubsection{Learning Environment}
+The DefeatRoaches mini game is 64x64 simple map without any obstacles that spawns a group of marines and roaches at two spawn points within the map. 
+
+\subsubsection{Map Variations}
+DefeatRoaches 1v1 - 
+Similar to the DefeatRoaches map except for the number of marines and 
+roaches in the map at spawn time. This custom map only has 1 marine and 1 roach at the designated spawn points. 
+
+The decision to make this custom map was made early on to make the learning environment as simple as possible for training purposes.
+
+DefeatRoaches96 - 
+This variation, DefeatRoaches96, is a 96x96 map that is bigger than the original. This allows the agent to have a larger input space to choose from which could potentially improve rate of convergence. 
+
+
+
 
 \section{Results}
 %% TODO: Talk about choice of hyper paramters, population size, episode count
