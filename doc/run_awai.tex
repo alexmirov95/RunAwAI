@@ -10,7 +10,7 @@
 \usepackage{blindtext}
 \usepackage{bm}
 \usepackage{float}
-\usepackage[margin=.75in]{geometry}
+\usepackage[margin=1.25in]{geometry}
 \usepackage{graphicx}
 \usepackage{mathrsfs}
 \usepackage{multicol}
@@ -61,10 +61,12 @@ $\blacksquare$
 \title{Run AwAI: StarCraftII Adversary Avoidance Using Neural Networks and
   Genetic Algorithms}
 
-\author{Kyle R. Chickering \\ krchicke@ucdavis.edu
-  \and Alex R. Mirov \\ armirov@ucdavis.edu
-  \and Simon H. Wu \\ simwu@ucdavis.edu
-  \and Xin Jin \\ jin@ucdavis.edu}
+\author{
+    Kyle R. Chickering \\ {\footnotesize\textbf{krchicke@ucdavis.edu}}
+    \and Alex R. Mirov \\ {\footnotesize\textbf{armirov@ucdavis.edu}}
+    \and Simon H. Wu \\   {\footnotesize\textbf{simwu@ucdavis.edu}}
+    \and Xin Jin \\       {\footnotesize\textbf{jin@ucdavis.edu}}
+}
 
 \date{June 8, 2018}
 
@@ -91,7 +93,7 @@ $\blacksquare$
 \hline
 \\~\\
 
-\begin{multicols}{2}
+%\begin{multicols}{2}
 \section{Introduction}
 Since AlphaGo's defeat of the Go champion Ke Jie, the artificial intelligence
 community has
@@ -217,9 +219,9 @@ not fall victim to our network not making decisions fast enough, and chose a
 time step that would allow the network to make decisions quickly enough to
 function well.
 
-\begin{figure}[H]
+\begin{figure}[h]\label{fig:flow chart}
 \centering
-\includegraphics[width=0.45\textwidth]{chart}\label{fig:flow chart}
+\includegraphics[width=0.45\textwidth]{chart}
 \begin{changemargin}{0.15in}{0.15in}
   \caption{Control and data flow through the Run AwAI controller.}
 \end{changemargin}
@@ -274,11 +276,11 @@ activation function:
   \varsigma(x) = \frac{1}{1 + e^{-x}}
 \end{align*}
 We chose this function for a number of reasons, the least of which is its
-popularity as an activation function in neural networks. Because of the shape of
-the sigmoid function, inputs to subsequent neurons stay in the nice range of
-$[-1, 1]$, which has the effect of normalizing the network. Since we are not
-using backpropogation, the nice properties of the sigmoid function were
-unimportant to us. However, if we were to do live backpropogation during
+popularity as an activation function in neural networks \cite{russell}. Because
+of the shape of the sigmoid function, inputs to subsequent neurons stay in the
+nice range of $[-1, 1]$, which has the effect of normalizing the network. Since
+we are not using backpropogation, the nice properties of the sigmoid function
+were unimportant to us. However, if we were to do live backpropogation during
 simulations (See section \ref{sec:improvements}), the sigmoid function would be
 a useful activation function.
 
@@ -360,76 +362,93 @@ distribution promoted faster convergence than using weights taken from a uniform
 distribution.
 
 \subsection{Controller}
+The controller was the interface we used to communicate with StarCraftII and run
+the simulations need to commute the fitness function. Our controller has a
+function to step the game simulation, which is called several times per
+second. We implemented all of our agent's logic, consisting of feeding forward
+the inputs through our neural network, inside of this step function.
 
-The Pysc2 interface allowed us to create an agent to interact with the Star
-Craft II game.  The agent class contains a \texttt{step()} function that is called
-several times per second of game time. This meant that all of the actions the
-agent took had to be in this step function, and thus this is where we would
-integrate our neural net.  We decided to use the mini game map DefeatRoaches,
-which is included with Pysc2 as a base for our simulation environment. By
-heavily relying on a preexisting map and mini game, we could focus more of our
-time and resources on developing the genetic algorithm and neural network
-implementation.
+We spent some time deciding what inputs to send to our neural network during the
+simulation. Originally, we sent absolute coordinates, but we found that these
+coordinates made the network into essentially a binary decision
+network. Instead, we settled on giving the neural networks relative coordinates
+produced much better results. We also give the neural network the relative
+coordinates of the enemy units. The controller queries the PySC2 interface for
+these values every time we take a step in the simulation, and the values are
+pulled out of StarCraftII itself.
 
-To make our controller implementation as modular as possible, we decided to
-provide a dictionary of inputs and receive a dictionary of outputs. The inputs
-would be the x and y coordinates of the agent’s units, as well as the x and y
-coordinates of the enemy units. The inputs had to be created and assembled into
-a dictionary in the step function.  In order to normalize the inputs, we divided
-the coordinate value by the maximum map size in the corresponding axis.  To
-obtain the values for the inputs, we created a series of methods for our agent
-class.  These methods include \texttt{getCurrentLocation()} and
-\texttt{getCurrentEnemeyLocation}().  We also created methods to move the friendly units,
-including \texttt{moveToLocation()} and setTargetDestination.  These functions could be
-used together to set a target destination coordinate and cause the friendly
-units to move toward that target.
+
+% The Pysc2 interface allowed us to create an agent to interact with the Star
+% Craft II game.  The agent class contains a \texttt{step()} function that is
+% called several times per second of game time. This meant that all of the actions
+% the agent took had to be in this step function, and thus this is where we would
+% integrate our neural net.  We decided to use the mini game map DefeatRoaches,
+% which is included with Pysc2 as a base for our simulation environment. By
+% heavily relying on a preexisting map and mini game, we could focus more of our
+% time and resources on developing the genetic algorithm and neural network
+% implementation.
+
+% To make our controller implementation as modular as possible, we decided to
+% provide a dictionary of inputs and receive a dictionary of outputs. The inputs
+% would be the x and y coordinates of the agent’s units, as well as the x and y
+% coordinates of the enemy units. The inputs had to be created and assembled into
+% a dictionary in the step function.  In order to normalize the inputs, we divided
+% the coordinate value by the maximum map size in the corresponding axis.  To
+% obtain the values for the inputs, we created a series of methods for our agent
+% class.  These methods include \texttt{getCurrentLocation()} and
+% \texttt{getCurrentEnemeyLocation}().  We also created methods to move the
+% friendly units, including \texttt{moveToLocation()} and setTargetDestination.
+% These functions could be used together to set a target destination coordinate
+% and cause the friendly units to move toward that target.
 
 One problem we encountered that we had to correct was determining when units
 arrived at their target destination.  We solved this by comparing the target
-destination and the units current location every time \texttt{step()} is called.  Because
-the DefeatRoaches mini game uses multiple units (both friendly and hostile), the
-unit location coordinates are averages of all selected units locations.  This
-means that often units will never actually arrive at their precise destination,
-just get very close to it.  To mitigate this issue, we decided to consider units
+destination and the unit's current location every time we step the simulation.
+Because the mini game uses multiple units (both friendly and hostile), the unit
+location coordinates are averaged over all selected units locations.  This means
+that often units will never actually arrive at their precise destination, just
+get very close to it. To mitigate this issue, we decided to consider units
 within a certain radius of their target destination as at their destination.
-Once this condition is met, the \texttt{moveToLocation()} function returns a status of
-arrived at target.
+Once this condition is met, we could ask the simulation whether or not units had
+reached their destination. Once the units reach their destination, we can choose
+a new destination for them to move to.
 
-Whenever \texttt{step()} is called by Pysc2, the first thing we do is check the
-observable action space. If friendly unit movement is not an option, this means
-the unit(s) are not selected.  If units are not selected, this means it is the
-first time the \texttt{step()} function is being called in the simulation episode.  In
-this case, in addition to selecting the units, we also reset various counters
-(such as steps survived).  During the first call of \texttt{step()}, we also unpickle a
-neural network file.
+% Whenever \texttt{step()} is called by Pysc2, the first thing we do is check the
+% observable action space. If friendly unit movement is not an option, this means
+% the unit(s) are not selected.  If units are not selected, this means it is the
+% first time the \texttt{step()} function is being called in the simulation
+% episode.  In this case, in addition to selecting the units, we also reset
+% various counters (such as steps survived).  During the first call of
+% \texttt{step()}, we also unpickle a neural network file.
 
-In the case where \texttt{step()} is called and units are already selected, the
-\texttt{moveToLocation()} function is called.  Initially, we set the target destination
-to the enemy location.  We have our units move directly to the hostile units in
-order to engage them in combat, and this initiate a pursuit from the enemy.  We
-felt this would be the most direct way to initiate a pursuit.  We investigated
-running two Pysc2 agents against each other, however Pysc2 currently only
-support the simulation of one custom agent at a time. Once the friendly units
-arrive at their destination, the \texttt{moveToLocation()} function returns an arrived at
-target status to the calling \texttt{step()} function.
+The controller also handles the interpretation of the data from the PySC2 interface, and acts as a ``human'' playing the game. The controller is responsible for selecting movements, making decisions, and executing those decisions.
 
-When the \texttt{step()} function receives an arrived at target status, a new target
-destination is set.  To generate a new target destination, the relevant aspects
-of the current state (current location of friendly and enemy units) are captured
-and fed into the neural network.  The neural network returns a dictionary
-containing the action space and a value between -1 and 1 for each action label
-key.  The action with the highest number will be chosen, and then taken.
+% In the case where \texttt{step()} is called and units are already selected, the
+% \texttt{moveToLocation()} function is called.  Initially, we set the target
+% destination to the enemy location.  We have our units move directly to the
+% hostile units in order to engage them in combat, and this initiate a pursuit
+% from the enemy.  We felt this would be the most direct way to initiate a
+% pursuit.  We investigated running two Pysc2 agents against each other, however
+% Pysc2 currently only support the simulation of one custom agent at a time. Once
+% the friendly units arrive at their destination, the \texttt{moveToLocation()}
+% function returns an arrived at target status to the calling \texttt{step()}
+% function.
 
-Our action space is movements that the friendly units can take.  We decided to
+When the controller receives an arrived at target status, a new
+target destination is set.  To generate a new target destination, the relevant
+aspects of the current state (current location of friendly and enemy units) are
+captured and fed into the neural network.  The neural network returns a
+vector of the action space and a value between -1 and 1 for each
+action label key. The action with the highest number will be chosen, and then
+taken.
+
+Our action space is movements that the friendly units can take. We decided to
 quantize the action space into discrete movements, as opposed to a continuous
-x-y coordinate plane. By only allowing our units to move in the 4 cardinal
+$x$-$y$ coordinate plane. By only allowing our units to move in the 4 cardinal
 directions, diagonals, or stay put, we hoped our first implementation of the
-neural network and genetic algorithm would have an easier time converging.  In
-the future, we could expand the output action space to a continuous x and y
-coordinate plane, as opposed to discrete directions. Although a larger action
-space can often require more iterations of the genetic algorithm to converge, as
-the problem complexity is much higher.
+neural network and genetic algorithm would have an easier time converging. 
 
+%% Fix
 To evaluate the fitness of the neural network, we count the number of steps that
 the units survived for.  One problem we encountered and solved, was the initial
 series of steps taken before engaging the enemy units. For example, the
@@ -443,22 +462,31 @@ destination (the location of the enemy units) and start their engagement. By
 only counting steps after enemy engagement has begun, our fitness function is
 more reflective of survival time.
 
-In order for our evolutionary genetic algorithm to evolve, the end fitness of a
-network must be returned from the Pysc2 simulation.  Our simulation runs a
-configurable (up to 55) episodes per individual (neural network) and averages
-the fitness for all of those simulation episodes. We played with the number of
-simulation episodes per simulation test, exploring the tradeoff between
-simulation runtime and precision.  In the future, we could explore modifying our
-fitness function to incorporate more meaning from having multiple simulation
-episodes.  One future idea we had was to see if the group of individual survival
-times were skewed above or below the mean.
+% In order for our evolutionary genetic algorithm to evolve, the end fitness of a
+% network must be returned from the Pysc2 simulation.  Our simulation runs a
+% configurable (up to 55) episodes per individual (neural network) and averages
+% the fitness for all of those simulation episodes. We played with the number of
+% simulation episodes per simulation test, exploring the tradeoff between
+% simulation runtime and precision.  In the future, we could explore modifying our
+% fitness function to incorporate more meaning from having multiple simulation
+% episodes.  One future idea we had was to see if the group of individual survival
+% times were skewed above or below the mean.
 
-The average fitness for the individual is then saved in a pickle file, along
-with the fitness of the top (most fit) individual.  Because the Pysc2 simulation
-is invoked from the genetic algorithm code, the algorithm can then unpickle the
-file.  After all individuals in a generation are tested and their fitnesses
-collected, the genetic algorithm can select the most fit individuals (neural
-networks) for breeding.
+In addition, the controller is responsible for calculating $\mathcal{S}(e)$ for
+each episode (simulation) that it runs, and returning the value to our genetic
+algorithm. This allows us to make modifications to our fitness function without
+having to make changes to the genetic algorithm. This also gives us the
+flexibility to extend the capabilities of the controller to run different style
+simulations in the future. For example we could run the agent through multiple
+types of maps, and compute the average fitness between multiple different
+episodes and maps.
+
+The average fitness for the individual is then saved in a Python pickle file,
+along with the fitness of the top (most fit) individual.  Because the Pysc2
+simulation is invoked from the genetic algorithm code, the algorithm can then
+unpickle the file.  After all individuals in a generation are tested and their
+fitnesses collected, the genetic algorithm can select the most fit individuals
+(neural networks) for breeding.
 
 \subsection{PySC2 Interface}
 Our simulation learning environment was based on an existing environment
@@ -494,7 +522,7 @@ hyper-parameters, and our results were promising. We saw measurable improvement
 in performance after just a few iterations of the algorithm, which gave us a
 steep initial learning curve before the improvements started to taper off.
 
-\begin{figure}[H]\label{fig:fitness graph}
+\begin{figure}[h]\label{fig:fitness graph}
 \centering
 \includegraphics[width=0.45\textwidth]{fig_1}
 \begin{changemargin}{0.15in}{0.15in}
@@ -525,7 +553,7 @@ is to be expected, however we see that the population can still achieve higher
 fitness measures which means that the algorithm still retains some amount of
 exploratory behavior.
 
-\begin{figure}[H]\label{fig:fitness graph}
+\begin{figure}[h]\label{fig:fitness graph}
 \centering
 \includegraphics[width=0.45\textwidth]{fig_2}
 \begin{changemargin}{0.15in}{0.15in}
@@ -556,16 +584,11 @@ algorithm. We think that using higher population sizes would also lead to better
 convergence, as the networks would be put through more and more simulations,
 generating a more and more accurate picture of their fitness.
 
-%% TODO: Talk about choice of hyper parameters, population size, episode count
-%% mutation constants, eta in fitness function
-
 \section{Conclusion}
 Different selection types?
-\blindtext
 
 \subsection{Improvements}\label{sec:improvements}
-% live back propagation
-One of the for-most improvements we could do is to train the neural networks
+One of the foremost improvements we could do is to train the neural networks
 during the simulation as well as training them through evolution. In addition
 to improving the convergence, this strategy would mimic nature even more.
 Organisms learn during their lifetimes, and there is speculation that the knowledge obtained by an individual during its lifetime can be passed down through the
@@ -578,6 +601,17 @@ This project can certainly be extended in many ways, for example, we could
 extend the output vectors to include offensive maneuvering by our agent, and
 train the agent to be aggressive by considering the number of adversaries killed
 by our agent during the simulation.
+
+In the future, we could expand the output action space to a continuous $x$ and
+$y$ coordinate plane, as opposed to discrete directions. Although a larger
+action space can often require more iterations of the genetic algorithm to
+converge, the benefits would be more nuanced agent behavior, and more realistic
+agent movements. As it stands now, our agent moves in what may be considered a
+very unnatural way, and while this does not affect the agent's ability to
+preform, it could be seen as a disadvantage in certain situations where the fact
+that the game is being played by an AI may be undesirable.
+
+We have also talked about putting more attention towards our fitness function. An interesting possibility is to take into account the number of episodes in $\bm{\mathcal{E}}$, and rewarding agents that have more simulations. We can then associate individuals with their simulation meta-data, and save time running simulations. We can start with a low number of simulations per individual, and as the generations progress, increase the number of simulations per individual. This would have the effect of starting with relatively low fitness, but increasing the ``accuracy'' of the fitness over time.
 
 Another possibility that we did not explore, was the effect of removing neurons
 from the network. Neural networks can often be plagued by overfitting input
@@ -598,33 +632,18 @@ plateau with a very fit individual for a period of time, and it would be
 interesting to see what effects a notion of ``lifetime'' would have on the
 algorithm as a whole.
 
-\end{multicols}
+%\end{multicols}
 
 \\~\\
 \hline
 \\~\\
 
 \begin{thebibliography}{9}
-\bibitem{NEAT} 
-  Kenneth O. Stanley, Risto Miikkulainen.
-  \textit{Evolving Neural Networks through Augmenting Topologies}. 
-  The MIT Press Journals.
 
 \bibitem{dejong}
-  Kenneth A. De Jong. \textit{Evolutionary Computation: A Unified Approach}.
+  Kenneth A. De Jong.
+  \textit{Evolutionary Computation: A Unified Approach}.
   MIT Press, Feb 3, 2006.
-
-\bibitem{russell}
-  Stuart Russell, Peter Norvig.
-  \textit{Artificial Intelligence: A Modern Approach}.
-  Upper Saddle River (New Jersey, 1995).
-
-\bibitem{lehman}
-  Joel Lehman et al.
-  \textit{The Surprising Creativity of Digital Evolution: A Collection of
-    Anecdotes from the Evolutionary Computation and Artificial Life Research
-    Communities}.
-  \textbf{https://arxiv.org/pdf/1803.03453.pdf}.
 
 \bibitem{pysc2}
   Google DeepMind pysc2.
@@ -634,6 +653,26 @@ algorithm as a whole.
   Andrew Hunt, David Thomas.
   \textit{The Pragmatic Programmer: From Journeyman to Master}
   Addison-Wesley (Reading, Mass., 2000)
+
+\bibitem{lehman}
+  Joel Lehman et al.
+  \textit{The Surprising Creativity of Digital Evolution: A Collection of
+    Anecdotes from the Evolutionary Computation and Artificial Life Research
+    Communities}.
+  \textbf{https://arxiv.org/pdf/1803.03453.pdf}.
+
+\bibitem{russell}
+  Stuart Russell, Peter Norvig.
+  \textit{Artificial Intelligence: A Modern Approach}.
+  Upper Saddle River (New Jersey, 1995).
+  
+\bibitem{NEAT} 
+  Kenneth O. Stanley, Risto Miikkulainen.
+  \textit{Evolving Neural Networks through Augmenting Topologies}. 
+  The MIT Press Journals.
+
+
+
 
 \end{thebibliography}
 
