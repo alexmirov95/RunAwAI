@@ -106,12 +106,12 @@ The game presents several challenges for artificial intelligence, the biggest of
 which is the magnitude of possible game states.
 
 We present a method of teaching an agent to avoid enemy players for as long as
-possibly by using genetic algorithms to evolve neural networks. We interface
+possible by using genetic algorithms to evolve neural networks. We interface
 our neural network agents using the PySC2 library  and evolve an agent that
 shows a measurable increase in its ability to run away.
 
 \section{Background}
-This project combines two proven artificial intelligence paradigms, neural
+This project combines two proven artificial intelligence paradigms: neural
 networks and genetic algorithms. These methods are traditionally orthogonal,
 but there has been a growing body of work in recent years with regards to
 evolving neural networks using genetic algorithms. Most notably \cite{NEAT} and
@@ -194,11 +194,11 @@ To compute the fitness for each neural network in the population, we run the
 network through a simulation. The simulation is run in StarCraftII, and our
 simulation controller is built on top of the PySCII interface, and simulates
 a ``game'' with our agent and a group of adversaries, which are controlled by
-the ingame AI that come with the game.
+the in game AI that come with the game.
 
 Each simulation is called an episode, and we ran the networks through 5-10
 episodes each so that we could get a representative sample of the amount of time
-that each nerual network was able to survive.
+that each neural network was able to survive.
 
 We let the neural network choose the next action from our action space, which
 consists of a series of movement directions (eight cardinals and a stay
@@ -269,7 +269,7 @@ algorithm explores more options before settling on a specific maximum.
 \subsection{Genetic Algorithm}
 For our implementation, we used a tournament style selection process to choose
 our most fit individuals. We use tournament selection over other selection
-methods (like probabilisitic selection), to improve convergence speeds.
+methods (like probabilistic selection), to improve convergence speeds.
 Tournament selection is an exploitive selection method, and we choose exploitive
 behavior over exploratory behavior because our simulation was a substantial
 bottleneck in our iterative process. Because we choose an exploitive method, we
