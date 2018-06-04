@@ -3,12 +3,14 @@
 
 if __name__ == "__main__":
     import sys
-    import pickle
     sys.path.insert(0, './../')
 
     from ga import Individual
     from ga import EvolutionaryController
     from nn import NeuralNetwork
+
+    def run_simulation(A):
+        pass
 
     # We define an Individual implementation to run evolution on through an
     # EvolutionaryController object
@@ -33,26 +35,12 @@ if __name__ == "__main__":
             will vary widely from problem to problem """
 
             fitness = 0
-            results = []
-            actual = [0, 1, 1, 0] # Expected results from XOR
 
-            # We run a trial for each of the four XOR cases, 00, 01, 10, 11
-            for t in [{'a': 0,'b': 0},
-                      {'a': 0, 'b':1},
-                      {'a':1, 'b':0},
-                      {'a': 1, 'b':1}]:
-                # Append the result of the XOR trial to the lis
-                results.append(list(self.network.feed_forward(t).values())[0])
+            fitness = 1 - run_simulation(self.network)
 
-            # Computes SUM_i (a_i - t_i)^2
-            for i in range(len(actual)):
-                fitness += (actual[i] - results[i])**2
-
-            # Heavily peanalize networks that are too big or too small to
-            # "force" convergence to the optimal (5 node) network.
-            if self.network.node_id > 5:
+            if self.network.node_id > 10:
                 fitness += 10*self.network.node_id
-            elif self.network.node_id < 5:
+            elif self.network.node_id < 10:
                 fitness += 10*(5 - self.network.node_id)
 
             return fitness
@@ -114,18 +102,3 @@ if __name__ == "__main__":
     # Run the evolution simulation and return the most fit individual from the
     # final iteration
     nn = EC.run_evolution(10, 1, 1, printing='minimal', generation_limit=gen_lim)
-
-    # Print the results of the most fit individual on the benchmark
-    print("\nResults from most fit network")
-    print([list(nn.network.feed_forward(a).values())[0] for a in [{'a': 0,'b': 0}, {'a': 0, 'b':1}, {'a':1, 'b':0}, {'a': 1, 'b':1}]])
-
-    picklefile = open('pfile', 'wb')
-    pickle.dump(nn.network.picklable(), picklefile)
-    picklefile.close()
-
-    picklefile = open('pfile', 'rb')
-    data = pickle.load(picklefile)
-    picklefile.close
-
-    nn.network.build_from_pickle(data)
-    print([list(nn.network.feed_forward(a).values())[0] for a in [{'a': 0,'b': 0}, {'a': 0, 'b':1}, {'a':1, 'b':0}, {'a': 1, 'b':1}]])
