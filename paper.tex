@@ -72,6 +72,8 @@ $\blacksquare$
 %% TODO: Random action is a fairly robust approach to the problem space
 %% TODO: Include convergence Graphs in the results section
 %% TODO: Talk about the mutation rates in the genetic algorithm
+%% TODO: Reference the fact that neuro evolution is good in high dimensional
+%%    and continuous state spaces (ref neat paper)
 
 \begin{document}
 
@@ -188,9 +190,15 @@ attacking a game that requires real time decision making and reasoning over a
 complex set of inputs.
 
 \subsection{Simulations}
-We run the neural networks through a simulation to compute their fitness. The
-simulations run through the PySCII interface, which runs our agent in a
-simulation against pre-built AI.
+To compute the fitness for each neural network in the population, we run the
+network through a simulation. The simulation is run in StarCraftII, and our
+simulation controller is built on top of the PySCII interface, and simulates
+a ``game'' with our agent and a group of adversaries, which are controlled by
+the ingame AI that come with the game.
+
+Each simulation is called an episode, and we ran the networks through 5-10
+episodes each so that we could get a representative sample of the amount of time
+that each nerual network was able to survive.
 
 We let the neural network choose the next action from our action space, which
 consists of a series of movement directions (eight cardinals and a stay
@@ -198,7 +206,7 @@ command).
 
 \begin{figure}[H]
 \centering
-%\includegraphics[width=0.45\textwidth]{chart}
+\includegraphics[width=0.45\textwidth]{chart}
 \begin{changemargin}{0.15in}{0.15in}
   \caption{Control and data flow through the Run AwAI controller.}
 \end{changemargin}
@@ -209,7 +217,7 @@ Talk about the mathematical model we are using to run the simulations
 \subsection{Neural Network}
 We started by using an explicit neural network implementation, which we chose
 because we were curious if the flexible topologies would lead to a more
-efficient neural network. We were inspired by the NEAT algorithm , which has
+efficient neural network. We were inspired by the NEAT algorithm \cite{NEAT}, which has
 shown promise in other video game domains. However we choose a simpler
 topologically explicit implementation to simplify the development of our
 algorithm. We ultimately settled on an acyclic graph representation, which
@@ -277,13 +285,17 @@ agent took during the simulation. We figured that this would be a good measure
 of our agent's ability to stay alive, and we thought that time alive was a good
 indicator of the agent's ability to accomplish the goal of running away. We
 computed the fitness $F$ using the following formula:
-\begin{align}
-  F(\bm{i}) = \mu - \eta\sqrt{\frac{1}{|\bm{\mathcal{E}}|}
-  \sum_{e \in \bm{\mathcal{E}}}\left(\mathcal{S}(e) - \mu\right)^2} 
-\end{align}
-where
-\begin{align}
-  \mu = \frac{1}{|\bm{\mathcal{E}}|} \sum_{e \in \bm{\mathcal{E}}} \mathcal{S}(e)
+% \begin{align}
+%   F(\bm{i}) = \mu - \eta\sqrt{\frac{1}{|\bm{\mathcal{E}}|}
+%   \sum_{e \in \bm{\mathcal{E}}}\left(\mathcal{S}(e) - \mu\right)^2} 
+% \end{align}
+% where
+% \begin{align}
+%   \mu = \frac{1}{|\bm{\mathcal{E}}|} \sum_{e \in \bm{\mathcal{E}}} \mathcal{S}(e)
+    %   \end{align}
+\begin{align}\label{eq:fitness}
+  F(\bm{i}) = \frac{1}{|\bm{\mathcal{E}}|} \sum_{e \in \bm{\mathcal{E}}} \mathcal{S}(e) - \eta\sqrt{\frac{1}{|\bm{\mathcal{E}}|}
+   \sum_{e \in \bm{\mathcal{E}}}\left(\mathcal{S}(e) - \frac{1}{|\bm{\mathcal{E}}|} \sum_{e \in \bm{\mathcal{E}}} \mathcal{S}(e)\right)^2} 
 \end{align}
 and $\bm{\mathcal{E}}$ is the set of all episodes run by the PySCII simulation,
 $\mathcal{S}(e)$ is the number of steps taken by the agent in the episode, and
@@ -326,6 +338,21 @@ where $\bm{\sigma}$ is a random variable from a Gaussian distribution.
 \subsection{Controller}
 
 \subsection{PySC2 Interface}
+Our simulation learning environment was based on an existing environment
+included in the PySC2 library\cite{pysc2}. We use the ``Defeat Roaches'' mini
+game as the baseline for our learning. Once we had the map, we used the
+StarCraftII map editor to tweak the mini game to better suit our needs. We
+created three maps that were used in testing. The defualt map is a simple square
+map which spawns a group of adversarialy ``roachs'', and a group of ``marines'',
+who are controlled by our agent. The marines and roaches are spawned in the
+same place every time, which gives us a consistent platform to test our agent.
+
+The second variation is similar to the first, except that there is only one
+``roach'' and one ``marine''. This map type highlights the capabilities of our
+agent in a more intimate setting. The group of marines has the advantage of
+being able to get ``lucky'' and have some members survive, but the one on one
+variation forces the neural network to work well from the beginning.
+
 
 The learning environment was based on the existing mini game environments from the PySC2 API. Specifically, our learning environment was built on top of the DefeatRoaches mini game.
 
@@ -347,23 +374,96 @@ The decision to make this custom map was made early on to make the learning envi
 DefeatRoaches96 - 
 This variation, DefeatRoaches96, is a 96x96 map that is bigger than the original. This allows the agent to have a larger input space to choose from which could potentially improve rate of convergence. 
 
-
-
-
 \section{Results}
+We ran several simulations with various choices of hyperparameters, and our
+results are promising. We saw measurable improvement in preformence after just
+a few iterations of the algorithm, which gave us a steep initial learning curve
+before the improvements started to taper off.
+
+\begin{figure}[H]\label{fig:fitness graph}
+\centering
+\includegraphics[width=0.45\textwidth]{fig_1}
+\begin{changemargin}{0.15in}{0.15in}
+  \caption{Graph of average fitness (blue) and top fitness (orange) for each
+    generation in Trial 1. Top fitness is the fitness of the most fit individual
+    at the end of each generation's simulations. Average fitness is calculated
+    by averaging \eqref{eq:fitness} over all individuals $\bm{i}$ in the
+    population. The breeding constant is set to 15, node generation rate is set
+    to 0.3, new connections at 0.2 and non structural mutations at a rate of
+    0.4}
+\end{changemargin}
+\end{figure}
+
+We see in Figure \ref{fig:fitness graph} an artifact from our choice of genetic
+algorithm. Because we keep the top individual from each generation in the gene
+pool, we see that the top individual has palteaued early, and no new individual
+is achieving a higer fitness. We see that the average is countinually decreasing
+though, which will increase the chances that an individual will be bred that has
+a higher fitness than the individual that is dominating the maximum fitness.
+
+We can also see that the average sometimes plateaus as well. This is due to a
+homonginization of the gene pool, where the children individuals are very
+similar to their parents. This is a case of finding a local maximum. Since we
+favored an exploitive algorithm, this is to be expected, however we see that the
+population can still achieve higher fitness meausures which means that the
+algorithm still retains some amount of exploratory behavior.
+
+\begin{figure}[H]\label{fig:fitness graph}
+\centering
+\includegraphics[width=0.45\textwidth]{fig_2}
+\begin{changemargin}{0.15in}{0.15in}
+  \caption{Graph of average fitness (blue) and top fitness (orange) for each
+    generation in Trial 1. Top fitness is the fitness of the most fit individual
+    at the end of each generation's simulations. Average fitness is calculated
+    by averaging \eqref{eq:fitness} over all individuals $\bm{i}$ in the
+    population. The breeding constant is set to 15, node generation rate is set
+    to 0.5, new connections at 0.5 and non structural mutations at a rate of
+    0.75}
+\end{changemargin}
+\end{figure}
+
+In our second trial, we see that the average fitness increases much more
+regularly. However, despite having more generations, trial two did not reach the
+same average fitness as trial one did. One possible reason for this is since our
+mutation rates are higher, our algorithm favored a more exploratory approach,
+which lead to a more consistant incresase in fitness, but did not reach as high
+of an average fitness.
+
 %% TODO: Talk about choice of hyper paramters, population size, episode count
 %% mutation constants, eta in fitness function
 
 \section{Conclusion}
 Different selection types?
+\blindtext
 
 \subsection{Improvements}
+\blindtext
+\blindtext
 
 \subsection{Future Work}
 This project can certainly be extended in many ways, for example, we could
 extend the output vectors to include offinsive manuvering by our agent, and
-train the agent to be agressive by considering the numebr of adversaries killed
+train the agent to be agressive by considering the number of adversaries killed
 by our agent during the simulation.
+
+Another possibility that we did not explore, was the effect of removing neurons
+from the network. Neural networks can often be plauged by overfitting input
+data, and by removing neurons we hypothesize that any overfitting we encounter
+could be mitigated. We would remove these neurons in the same way that we add
+neurons, that is, non-deterministically as a possible mutation. In the study of
+biological creatures, we often see either total dropping of traits from the
+population genome or the transition to vestigial genetic structure
+\cite{lehman}. In keeping with this, instead of outright removing the neuron, we
+could significantly decrease the strength of the connections to it, essentially
+removing it from the network. If the neuron in question was indeed problematic,
+we would see it countinue to evolve very low weights, essentially pruning the
+neuron and rendering it vestigial.
+
+We could also track the lifespan of certain individuals and kill them off after
+a certain number of generations. We found that the algorithm would sometimes
+plateau with a very fit individual for a period of time, and it would be
+interesting to see what effects a notion of ``lifetime'' would have on the
+algorithm as a whole.
 
 \end{multicols}
 
