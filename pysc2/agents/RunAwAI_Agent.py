@@ -2,11 +2,11 @@
 # Simon Wu for ECS 170 @ UC Davis, Spring 2018.
 
 """
-  RunAwAI Agent
-  Will run away from enemy units.
+RunAwAI Agent
+Will run away from enemy units.
 
-  TEST USAGE:
-    python -m pysc2.bin.agent --map DefeatRoaches --agent pysc2.agents.RunAwAI_Agent.RunAwAI
+TEST USAGE:
+  python -m pysc2.bin.agent --map DefeatRoaches --agent pysc2.agents.RunAwAI_Agent.RunAwAI
 """
 
 from __future__ import absolute_import
@@ -62,7 +62,7 @@ class RunAwAI(base_agent.BaseAgent):
 
   def getCurrentLocation(self):
     """
-      returns [xcoord, ycoord] of current player location
+    returns [xcoord, ycoord] of current player location
     """
     player_relative = self.obs.observation["screen"][_PLAYER_RELATIVE]
     player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
@@ -70,7 +70,7 @@ class RunAwAI(base_agent.BaseAgent):
 
   def getCurrentEnemyLocation(self):
     """
-      returns [xcoord, ycoord] of current enemy location
+    returns [xcoord, ycoord] of current enemy location
     """
     player_relative = self.obs.observation["screen"][_PLAYER_RELATIVE]
     player_y, player_x = (player_relative == _PLAYER_HOSTILE).nonzero()
@@ -79,12 +79,12 @@ class RunAwAI(base_agent.BaseAgent):
 
   def moveToLocation (self):
     """
-      Moves selected unit(s) to self.target location. Returns an object with the
-      movement status of the units, i.e. if they're still enroute to target, or
-      if they have arrived, and the return function that actually invokes the 
-      movement. 
-      The returnObject["function"] must be returned in the main step()
-      function to invoke movement.
+    Moves selected unit(s) to self.target location. Returns an object with the
+    movement status of the units, i.e. if they're still enroute to target, or
+    if they have arrived, and the return function that actually invokes the 
+    movement. 
+    The returnObject["function"] must be returned in the main step()
+    function to invoke movement.
     """
     target = self.target
     # get current location
@@ -109,7 +109,7 @@ class RunAwAI(base_agent.BaseAgent):
 
   def setTargetDestination (self, coordinates):
     """
-      Sets the target destination to an x and y tuple in coordinates
+    Sets the target destination to an x and y tuple in coordinates
     """
     x = coordinates[0]
     y = coordinates[1]
@@ -121,8 +121,8 @@ class RunAwAI(base_agent.BaseAgent):
 
   def movementStep (self, direction, distance):
     """
-      Will have selected unit(s) move a specified distnace in the
-      directions "NORTH", "SOUTH", "EAST", "WEST", or "STAY"
+    Will have selected unit(s) move a specified distnace in the
+    directions cardinal directions, diagonals, and stay put
     """
     newTarget = self.getCurrentLocation()
 
@@ -193,9 +193,8 @@ class RunAwAI(base_agent.BaseAgent):
         "stdDev": stdDev
       }, picklefile)
       picklefile.close()
-      # Exit
+      # Exits simulation
       exit(0)
-
 
     # checks to see if units can move, i.e. if they're selected
     if _MOVE_SCREEN in obs.observation["available_actions"]:
@@ -217,8 +216,8 @@ class RunAwAI(base_agent.BaseAgent):
           currentLocation = self.getCurrentLocation()
 
           """
-            neural network input array:
-            [maxmap_x, maxmap_y, enemy_x, enemy_y, unit_x, unit_y]
+          neural network input array:
+           [enemy_x, enemy_y, unit_x, unit_y]
           """
           movementDirection = 'STAY'
           if self.ct > 1:
@@ -239,9 +238,7 @@ class RunAwAI(base_agent.BaseAgent):
                 maximum = nnOutputDict[key]
               dirCount += 1
               
-          # stepSize = random.choice(range(1, 25))
-          stepSize = 10
-
+          stepSize = 10 # distance for each movement step taken by the unit(s)
 
           # move the chosen distance and direction
           self.movementStep(str(movementDirection), stepSize)
