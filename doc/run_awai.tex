@@ -337,6 +337,105 @@ where $\bm{\sigma}$ is a random variable from a Gaussian distribution.
 
 \subsection{Controller}
 
+The Pysc2 interface allowed us to create an agent to interact with the Star
+Craft II game.  The agent class contains a \texttt{step()} function that is called
+several times per second of game time. This meant that all of the actions the
+agent took had to be in this step function, and thus this is where we would
+integrate our neural net.  We decided to use the mini game map DefeatRoaches,
+which is included with Pysc2 as a base for our simulation environment. By
+heavily relying on a preexisting map and mini game, we could focus more of our
+time and resources on developing the genetic algorithm and neural network
+implementation.
+
+To make our controller implementation as modular as possible, we decided to
+provide a dictionary of inputs and receive a dictionary of outputs. The inputs
+would be the x and y coordinates of the agent’s units, as well as the x and y
+coordinates of the enemy units. The inputs had to be created and assembled into
+a dictionary in the step function.  In order to normalize the inputs, we divided
+the coordinate value by the maximum map size in the corresponding axis.  To
+obtain the values for the inputs, we created a series of methods for our agent
+class.  These methods include \texttt{getCurrentLocation()} and
+\texttt{getCurrentEnemeyLocation}().  We also created methods to move the friendly units,
+including \texttt{moveToLocation()} and setTargetDestination.  These functions could be
+used together to set a target destination coordinate and cause the friendly
+units to move toward that target.
+
+One problem we encountered that we had to correct was determining when units
+arrived at their target destination.  We solved this by comparing the target
+destination and the units current location every time \texttt{step()} is called.  Because
+the DefeatRoaches mini game uses multiple units (both friendly and hostile), the
+unit location coordinates are averages of all selected units locations.  This
+means that often units will never actually arrive at their precise destination,
+just get very close to it.  To mitigate this issue, we decided to consider units
+within a certain radius of their target destination as at their destination.
+Once this condition is met, the \texttt{moveToLocation()} function returns a status of
+arrived at target.
+
+Whenever \texttt{step()} is called by Pysc2, the first thing we do is check the
+observable action space. If friendly unit movement is not an option, this means
+the unit(s) are not selected.  If units are not selected, this means it is the
+first time the \texttt{step()} function is being called in the simulation episode.  In
+this case, in addition to selecting the units, we also reset various counters
+(such as steps survived).  During the first call of \texttt{step()}, we also unpickle a
+neural network file.
+
+In the case where \texttt{step()} is called and units are already selected, the
+\texttt{moveToLocation()} function is called.  Initially, we set the target destination
+to the enemy location.  We have our units move directly to the hostile units in
+order to engage them in combat, and this initiate a pursuit from the enemy.  We
+felt this would be the most direct way to initiate a pursuit.  We investigated
+running two Pysc2 agents against each other, however Pysc2 currently only
+support the simulation of one custom agent at a time. Once the friendly units
+arrive at their destination, the \texttt{moveToLocation()} function returns an arrived at
+target status to the calling \texttt{step()} function.
+
+When the \texttt{step()} function receives an arrived at target status, a new target
+destination is set.  To generate a new target destination, the relevant aspects
+of the current state (current location of friendly and enemy units) are captured
+and fed into the neural network.  The neural network returns a dictionary
+containing the action space and a value between -1 and 1 for each action label
+key.  The action with the highest number will be chosen, and then taken.
+
+Our action space is movements that the friendly units can take.  We decided to
+quantize the action space into discrete movements, as opposed to a continuous
+x-y coordinate plane. By only allowing our units to move in the 4 cardinal
+directions, diagonals, or stay put, we hoped our first implementation of the
+neural network and genetic algorithm would have an easier time converging.  In
+the future, we could expand the output action space to a continuous x and y
+coordinate plane, as opposed to discrete directions. Although a larger action
+space can often require more iterations of the genetic algorithm to converge, as
+the problem complexity is much higher.
+
+To evaluate the fitness of the neural network, we count the number of steps that
+the units survived for.  One problem we encountered and solved, was the initial
+series of steps taken before engaging the enemy units. For example, the
+DefeatRoaches map spawns the enemy and friendly units on opposite sides of the
+map, in a random selection of several predefined start locations.  However, the
+distance between these start locations can vary between simulation episode.
+This means our neural network fitness (number of steps survived) could be
+slightly affected by an irrelevant condition.  To mitigate this issue, we
+subtract the number of steps it takes until the friendly units reach their first
+destination (the location of the enemy units) and start their engagement. By
+only counting steps after enemy engagement has begun, our fitness function is
+more reflective of survival time.
+
+In order for our evolutionary genetic algorithm to evolve, the end fitness of a
+network must be returned from the Pysc2 simulation.  Our simulation runs a
+configurable (up to 55) episodes per individual (neural network) and averages
+the fitness for all of those simulation episodes. We played with the number of
+simulation episodes per simulation test, exploring the tradeoff between
+simulation runtime and precision.  In the future, we could explore modifying our
+fitness function to incorporate more meaning from having multiple simulation
+episodes.  One future idea we had was to see if the group of individual survival
+times were skewed above or below the mean.
+
+The average fitness for the individual is then saved in a pickle file, along
+with the fitness of the top (most fit) individual.  Because the Pysc2 simulation
+is invoked from the genetic algorithm code, the algorithm can then unpickle the
+file.  After all individuals in a generation are tested and their fitnesses
+collected, the genetic algorithm can select the most fit individuals (neural
+networks) for breeding.
+
 \subsection{PySC2 Interface}
 Our simulation learning environment was based on an existing environment
 included in the PySC2 library\cite{pysc2}. We use the ``Defeat Roaches'' mini
