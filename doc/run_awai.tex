@@ -343,36 +343,30 @@ included in the PySC2 library\cite{pysc2}. We use the ``Defeat Roaches'' mini
 game as the baseline for our learning. Once we had the map, we used the
 StarCraftII map editor to tweak the mini game to better suit our needs. We
 created three maps that were used in testing. The defualt map is a simple square
-map which spawns a group of adversarialy ``roachs'', and a group of ``marines'',
+map which spawns a group of adversarialy ``roaches'', and a group of ``marines'',
 who are controlled by our agent. The marines and roaches are spawned in the
 same place every time, which gives us a consistent platform to test our agent.
 
 The second variation is similar to the first, except that there is only one
 ``roach'' and one ``marine''. This map type highlights the capabilities of our
 agent in a more intimate setting. The group of marines has the advantage of
-being able to get ``lucky'' and have some members survive, but the one on one
+being able to get ``lucky'' and have some members survive, but the 1v1
 variation forces the neural network to work well from the beginning.
-
-
-The learning environment was based on the existing mini game environments from the PySC2 API. Specifically, our learning environment was built on top of the DefeatRoaches mini game.
-
-The maps were retrieved from Deepmind's PySC2 Github repository and 
-put into the StarcraftII/Maps/ directory.
 
 All maps were edited in the SCII map editor. 
 
 \subsubsection{Learning Environment}
-The DefeatRoaches mini game is 64x64 simple map without any obstacles that spawns a group of marines and roaches at two spawn points within the map. 
+The final map chosen for our simulations was the default DefeatRoaches mini game. The mini game provides a simple map that is 64x64 without any obstacles that spawns a group of marines and roaches at two spawn points within the map. 
 
 \subsubsection{Map Variations}
 DefeatRoaches 1v1 - 
-Similar to the DefeatRoaches map except for the number of marines and 
+Similar to the default DefeatRoaches map except for the number of marines and 
 roaches in the map at spawn time. This custom map only has 1 marine and 1 roach at the designated spawn points. 
 
 The decision to make this custom map was made early on to make the learning environment as simple as possible for training purposes.
 
 DefeatRoaches96 - 
-This variation, DefeatRoaches96, is a 96x96 map that is bigger than the original. This allows the agent to have a larger input space to choose from which could potentially improve rate of convergence. 
+This variation, DefeatRoaches96, is a 96x96 map that is bigger than the original. This allows the agent to have a larger input space to choose from which could potentially improve rate of convergence to an optimal solution. 
 
 \section{Results}
 We ran several simulations with various choices of hyperparameters, and our
