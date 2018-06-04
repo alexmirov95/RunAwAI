@@ -2,11 +2,11 @@
 # Simon Wu for ECS 170 @ UC Davis, Spring 2018.
 
 """
-  RunAwAI Agent
-  Will run away from enemy units.
+RunAwAI Agent
+Will run away from enemy units.
 
-  TEST USAGE:
-    python -m pysc2.bin.agent --map DefeatRoaches --agent pysc2.agents.RunAwAI_Agent.RunAwAI
+TEST USAGE:
+  python -m pysc2.bin.agent --map DefeatRoaches --agent pysc2.agents.RunAwAI_Agent.RunAwAI
 """
 
 from __future__ import absolute_import
@@ -50,10 +50,19 @@ class RunAwAI(base_agent.BaseAgent):
   stepsToStart = 0
   firstMove = False
   simCt = 0 # simulation count
+  fitnessHistory = [] # number of steps survived each simulation
+  numEpisodes = 10 # number of episodes per simulation to run
+
+  def calculateAverageFitness(self):
+    """
+    Returns the average number of steps survived for the entire round
+    of simulations.
+    """
+    return sum(self.fitnessHistory) / len(self.fitnessHistory)
 
   def getCurrentLocation(self):
     """
-      returns [xcoord, ycoord] of current player location
+    returns [xcoord, ycoord] of current player location
     """
     player_relative = self.obs.observation["screen"][_PLAYER_RELATIVE]
     player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
@@ -61,7 +70,7 @@ class RunAwAI(base_agent.BaseAgent):
 
   def getCurrentEnemyLocation(self):
     """
-      returns [xcoord, ycoord] of current enemy location
+    returns [xcoord, ycoord] of current enemy location
     """
     player_relative = self.obs.observation["screen"][_PLAYER_RELATIVE]
     player_y, player_x = (player_relative == _PLAYER_HOSTILE).nonzero()
@@ -70,12 +79,12 @@ class RunAwAI(base_agent.BaseAgent):
 
   def moveToLocation (self):
     """
-      Moves selected unit(s) to self.target location. Returns an object with the
-      movement status of the units, i.e. if they're still enroute to target, or
-      if they have arrived, and the return function that actually invokes the 
-      movement. 
-      The returnObject["function"] must be returned in the main step()
-      function to invoke movement.
+    Moves selected unit(s) to self.target location. Returns an object with the
+    movement status of the units, i.e. if they're still enroute to target, or
+    if they have arrived, and the return function that actually invokes the 
+    movement. 
+    The returnObject["function"] must be returned in the main step()
+    function to invoke movement.
     """
     target = self.target
     # get current location
@@ -100,7 +109,7 @@ class RunAwAI(base_agent.BaseAgent):
 
   def setTargetDestination (self, coordinates):
     """
-      Sets the target destination to an x and y tuple in coordinates
+    Sets the target destination to an x and y tuple in coordinates
     """
     x = coordinates[0]
     y = coordinates[1]
@@ -112,8 +121,8 @@ class RunAwAI(base_agent.BaseAgent):
 
   def movementStep (self, direction, distance):
     """
-      Will have selected unit(s) move a specified distnace in the
-      directions "NORTH", "SOUTH", "EAST", "WEST", or "STAY"
+    Will have selected unit(s) move a specified distnace in the
+    directions cardinal directions, diagonals, and stay put
     """
     newTarget = self.getCurrentLocation()
 
@@ -137,19 +146,18 @@ class RunAwAI(base_agent.BaseAgent):
     elif direction is "NORTHWEST":
       newTarget[0] -= distance
       newTarget[1] += distance
-
     elif direction is "STAY":
       # no movement from current location
       newTarget = newTarget
     else:
-      print("Invalid Direction")
+      print("Invalid Direction:", direction)
 
     # cap map bounds of new target within map dimensions
     borderLimit = 4 # target will not be set within borderLimit distance of the edge of map
-    if newTarget[0] >= self.maxMapHeight - borderLimit:
-      newTarget[0] = self.maxMapHeight - borderLimit
-    if newTarget[1] >= self.maxMapWidth - borderLimit:
-      newTarget[1] = self.maxMapWidth - borderLimit
+    if newTarget[0] >= (self.maxMapHeight - borderLimit):
+      newTarget[0] = (self.maxMapHeight - borderLimit)
+    if newTarget[1] >= (self.maxMapWidth - borderLimit):
+      newTarget[1] = (self.maxMapWidth - borderLimit)
     if newTarget[0] <= borderLimit:
       newTarget[0] = borderLimit
     if newTarget[1] <= borderLimit:
@@ -165,14 +173,28 @@ class RunAwAI(base_agent.BaseAgent):
     # time.sleep(0.01) # time to slep per step
     if self.ct < 0:
       # unpickle nn file
-      picklefile = open('picklepipe', 'rb')
+      picklefile = open('picklepipe.pickle', 'rb')
       data = pickle.load(picklefile)
       picklefile.close
 
-      self.nn = NeuralNetwork(None, None, None, None)
+      self.nn = NeuralNetwork(None, None, ['maxmap_x', 'maxmap_y', 'enemy_x', 'enemy_y', 'unit_x', 'unit_y'], None)
       self.nn.build_from_pickle(data)
 
-
+    if self.simCt == self.numEpisodes:
+      # End Simulation after self.numEpisodes episodes
+      averageFitness = self.calculateAverageFitness()
+      stdDev = numpy.std(self.fitnessHistory)
+      print("Ending Simulation.  AvgFitness =", averageFitness, "   StdDev =", stdDev)
+      
+      # Pickle fitness (steps survived)
+      picklefile = open("lastFitness.pickle", "wb")
+      pickle.dump({ 
+        "fitness": averageFitness,
+        "stdDev": stdDev
+      }, picklefile)
+      picklefile.close()
+      # Exits simulation
+      exit(0)
 
     # checks to see if units can move, i.e. if they're selected
     if _MOVE_SCREEN in obs.observation["available_actions"]:
@@ -194,20 +216,32 @@ class RunAwAI(base_agent.BaseAgent):
           currentLocation = self.getCurrentLocation()
 
           """
-            neural network input array:
-            [maxmap_x, maxmap_y, enemy_x, enemy_y, unit_x, unit_y]
+          neural network input array:
+           [enemy_x, enemy_y, unit_x, unit_y]
           """
+          movementDirection = 'STAY'
           if self.ct > 1:
-            nnInputArr = [self.maxMapWidth, self.maxMapHeight, enemyLocation[0], enemyLocation[1], currentLocation[0], currentLocation[1]]
-            print("nnInputArr = ", nnInputArr)
-            nnOutputArr = list(self.nn.feed_forward(nnInputArr).values())[0]
-            print("nnOutputArr = ", nnOutputArr)
+            nnInputArr = [enemyLocation[0] / self.maxMapWidth, enemyLocation[1] / self.maxMapHeight, currentLocation[0] / self.maxMapWidth, currentLocation[1] / self.maxMapHeight]
+            # print("nnInputArr = ", nnInputArr)
+            nnInputDict = {}
+            for label, value in zip(['enemy_x', 'enemy_y', 'unit_x', 'unit_y'], nnInputArr):
+              nnInputDict[label] = value
+              
+            nnOutputDict = self.nn.feed_forward(nnInputDict)
+            self.nn.non_structural_mutation()
 
-          movementDirection = random.choice(movementDirectionActionSpace)
-          stepSize = random.choice(range(1, 25))
+            dirCount = 0
+            maximum = float(-1000)
+            for key in nnOutputDict.keys():
+              if float(nnOutputDict[key]) > maximum:
+                movementDirection = movementDirectionActionSpace[dirCount]
+                maximum = nnOutputDict[key]
+              dirCount += 1
+              
+          stepSize = 10 # distance for each movement step taken by the unit(s)
 
           # move the chosen distance and direction
-          self.movementStep(movementDirection, stepSize)
+          self.movementStep(str(movementDirection), stepSize)
 
         self.ct += 1 # increment step count
         return returnObj["function"]
@@ -224,25 +258,14 @@ class RunAwAI(base_agent.BaseAgent):
 
     # select units
     else:
-      print("got here to the selection part!!!!!!!!")
       if self.ct > 0:
         # because ct is initialized as -1, this is not the first selection of the first game
         stepsSurvived = self.ct - self.stepsToStart
+        self.fitnessHistory.append(stepsSurvived)
         print("SURVIVED: ", stepsSurvived, "steps.")
+
         self.stepsToStart = 0
-      else:
-        # first time running first simulation
-        print("FIRST TIME RUNNING!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        # # unpickle nn file
-        # picklefile = open('picklepipe', 'rb')
-        # data = pickle.load(picklefile)
-        # picklefile.close
 
-        # self.nn = NeuralNetwork(None, None, None, None)
-        # self.nn.build_from_pickle(data)
-
-      if self.simCt == 55:
-        print("LAST SIM!!!!!!!!!!!!!!!!!!!!")
 
       # reset count
       self.ct = 0

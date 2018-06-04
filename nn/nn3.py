@@ -410,6 +410,7 @@ class NeuralNetwork(object):
                     if random.uniform(0, 1) <= self.n_struct_mut_rate:
                         cons[con]['weight'] += random.gauss(0, 1
                     )
+                        cons[con]['weight'] /= 2
 
         return
 

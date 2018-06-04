@@ -1,6 +1,8 @@
 # Originally written by Kyle Chickering, Taaha Chaudhry, Xin Jin, Alex Mirov and
 # Simon Wu for ECS 170 @ UC Davis, Spring 2018.
 
+OPTIMAL_FITNESS = 500
+
 if __name__ == "__main__":
     import pickle
     import subprocess
@@ -35,24 +37,19 @@ if __name__ == "__main__":
             
             fitness = 0
 
-            picklefile = open('picklepipe', 'wb')
+            picklefile = open('picklepipe.pickle', 'wb')
             pickle.dump(self.network.picklable(), picklefile)
             picklefile.close()
 
             subprocess.call(['./start.sh'])
 
-            exit()
+            picklefile = open('lastFitness.pickle', 'r')
+            data = pickle.load(picklefile)
+            picklefile.close
 
-            fitness = 1 - run_simulation(self.network)
-            
-            if self.network.node_id > 10:
-                fitness += 10*self.network.node_id
-            elif self.network.node_id < 10:
-                fitness += 10*(5 - self.network.node_id)
-                
-            return fitness
+            return 500 - (1*float(data['fitness']) + 0.25 * float(data['stdDev']))
 
-
+        
         def breed_parents(self, parent_tuple, child, reproduction_constant):
             """ Simply calls the network's breeding function to generate a 
             child. """
@@ -84,10 +81,11 @@ if __name__ == "__main__":
             the magic numbers in the initialization to get different behavior
             out of our network."""
             
-            self.network = NeuralNetwork(6, 9, ['a', 'b', 'c', 'd', 'e', 'f'], ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
-                                          struct_mut_new_rate=0.0,
-                                          struct_mut_con_rate=0.2,
-                                          n_struct_mut_rate=0.2)
+            self.network = NeuralNetwork(4, 9, ['enemy_x', 'enemy_y', 'unit_x', 'unit_y'], ["NORTH", "SOUTH", "EAST", "WEST", "NORTHEAST","SOUTHEAST","SOUTHWEST","NORTHWEST","STAY"],
+                                         struct_mut_new_rate=0.2,
+                                         struct_mut_con_rate=0.2,
+                                         n_struct_mut_rate=0.2,
+                                         hidden_function_type='sigmoid')
 
             self.network.build_network()
             
@@ -105,7 +103,10 @@ if __name__ == "__main__":
 
     # How many iterations to run?
     gen_lim = int(input("How many iterations: "))
+    gen_lim -= 1
     
     # Run the evolution simulation and return the most fit individual from the
+    print("Running evolution...")
     # final iteration
-    nn = EC.run_evolution(10, 1, 1, printing='minimal', generation_limit=gen_lim)
+    nn = EC.run_evolution(3, 1, 1, printing='full', 
+        generation_limit=gen_lim)

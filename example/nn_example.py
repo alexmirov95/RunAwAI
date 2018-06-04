@@ -1,10 +1,15 @@
+#TODO might no longer be working
+'''\
+    Simple neural network example
+'''
+
 import sys
-sys.path.insert(0, './../')
-import ga
-import nn
+sys.path.append('../')
+
+from ga import EvolutionaryController
 
 if __name__ == "__main__":
-    nn_use = ga.NeuralNetwork(0.125)
+    nn_use = NeuralNetwork(0.125)
     o = nn_use.add_output('o')
     h1 = nn_use.add_hidden({o: 0.5}, 'binary')
     h2 = nn_use.add_hidden({o: 0.3}, 'binary')

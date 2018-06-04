@@ -6,7 +6,7 @@
 # not a particular point is above or below the graph of a line.
 
 import sys
-sys.path.insert(0, './../')
+sys.path.append('../')
 
 import math
 import random

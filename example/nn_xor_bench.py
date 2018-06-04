@@ -4,7 +4,7 @@
 if __name__ == "__main__":
     import sys
     import pickle
-    sys.path.insert(0, './../')
+    sys.path.append('../')
 
     from ga import Individual
     from ga import EvolutionaryController
