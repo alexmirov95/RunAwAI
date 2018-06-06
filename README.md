@@ -1,6 +1,6 @@
 # Project RunAwAI
 
-#### ECS 170 Spring 2018
+#### UC Davis ECS 170 Spring 2018
 
 #### By:  Alex Mirov, Simon Wu, Kyle Chickering, and Xin Jin
 
