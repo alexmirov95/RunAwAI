@@ -77,11 +77,6 @@ agents. We chose this method as the problem space closely resembles nature's
 predator/prey motif. By modeling our agent as an evolving neural network we can
 get results that mimic generational evolution in nature. 
 
-## Results
-
-## Conclusion
-
-## Refrences
-Kenneth DeJong
-Stanly NEAT
+## Setup 
+Reference documentation on setting up the DeepMind PySC2 environment here: https://github.com/deepmind/pysc2
 
