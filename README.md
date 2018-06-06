@@ -2,7 +2,7 @@
 
 #### ECS 170 Spring 2018
 
-#### By: Alex Mirov, Simon Wu, Kyle Chickering, Xin Jin
+#### By:  Alex Mirov, Simon Wu, Kyle Chickering, and Xin Jin
 
 # RunAwAI
 ## Abstract
