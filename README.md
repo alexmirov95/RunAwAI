@@ -2,6 +2,8 @@
 
 #### ECS 170 Spring 2018
 
+#### By: Alex Mirov, Simon Wu, Kyle Chickering, Xin Jin
+
 # RunAwAI
 ## Abstract
 This project explores the integration of a neural network and an evolutionary
