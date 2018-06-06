@@ -26,8 +26,9 @@ iterative generations, our resulting neural network had increased the average
 survival time of an agent by 288%.
 
 
+
 ## Introduction
-After AlphaGo defeated Ke Jie [], the artifical intelligence community has been
+After AlphaGo defeated Ke Jie, the artifical intelligence community has been
 looking for the next problem domain to apply learning techniques to. A
 potentially surprising candidate for artificial intelligence testing has emerged
 in the form of real time strategy games. Real time strategy games work by having
@@ -39,14 +40,14 @@ which is the magnitude of possible game states.
 
 We present a method of teaching an agent to avoid enemy players for as long as
 possibly by using genetic algorithms to evolve neural networks. We interface
-our neural network agents using the PySC2 library [] and evolve an agent that
+our neural network agents using the PySC2 library and evolve an agent that
 shows a measurable increase in its ability to run away.
 
 ## Background
 This project combines two proven artificial intelligence paradigms, neural
 networks and gentetic algorithms. These methods are traditionally orthogonal,
 but there has been a growing body of work in recent years with regards to
-evolving neural networks using genetic algorithms. Most notably [ref] and [ref].
+evolving neural networks using genetic algorithms.
 
 ### Neural Networks
 Neural networks are a method of computing any computable function by using a
@@ -82,14 +83,14 @@ In a similar line of though that led researcher to build neural networks by
 looking to nature for inspiration, genetic algorithms exploit natural selection
 to create optimal solutions to problems. Research into genetic algorithms
 started when researchers realized that there is nothing inherint in evolution
-that limits the process to nature []. In fact, by thinking of evolution as
+that limits the process to nature. In fact, by thinking of evolution as
 an algorithm in and of itself, we can extend the principle of evolution to
 digital systems. This is commonly done by defining what an "individual" and
 "fitness function" mean in the digital evolution landscape. The algorithm
 proceeds as evolution does in nature by picking the most well adapted
 individuals to "breed", and evaluating their "offspring" on the same problem.
-This technique has yielded several fascinating results [][][], and often the
-algorithm generates novel solutions to difficult problems [][].
+This technique has yielded several fascinating results, and often the
+algorithm generates novel solutions to difficult problems.
 
 ## Methodology
 Our approach involves combining genetic algorithms and neural networks to
@@ -98,11 +99,11 @@ agents. We chose this method as the problem space closely resembles nature's
 predator/prey motif. By modeling our agent as an evolving neural network we can
 get results that mimic generational evolution in nature. 
 
-## Results
+## Setup 
+Reference documentation on setting up the DeepMind PySC2 environment here: https://github.com/deepmind/pysc2
 
-## Conclusion
-
-## Refrences
-Kenneth DeJong
-Stanly NEAT
+The RunAwAI agent can be run by: 
+```
+ python -m pysc2.bin.agent --map DefeatRoaches --agent pysc2.agents.RunAwAI_Agent.RunAwAI
+```
 
