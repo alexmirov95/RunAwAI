@@ -50,10 +50,10 @@ if __name__ == "__main__":
 
             # Heavily peanalize networks that are too big or too small to
             # "force" convergence to the optimal (5 node) network.
-            if self.network.node_id > 5:
-                fitness += 10*self.network.node_id
-            elif self.network.node_id < 5:
-                fitness += 10*(5 - self.network.node_id)
+            # if self.network.node_id > 5:
+            #     fitness += 10*self.network.node_id
+            # elif self.network.node_id < 5:
+            #     fitness += 10*(5 - self.network.node_id)
 
             return fitness
 

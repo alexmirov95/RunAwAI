@@ -3,7 +3,7 @@
 #
 
 import abc
-from activation import ActivationFunction
+from .activation import ActivationFunction
 
 class NeuralNetworkNeuron(abc.ABC):
     """
@@ -56,7 +56,7 @@ class NeuralNetworkOutputNeuron(NeuralNetworkNeuron):
         self.label = label
         self.node_id = node_id
 
-        
+
     def __str__(self):
         return self.label
 
