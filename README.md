@@ -99,10 +99,40 @@ agents. We chose this method as the problem space closely resembles nature's
 predator/prey motif. By modeling our agent as an evolving neural network we can
 get results that mimic generational evolution in nature. 
 
+## Results
+
+#### Initial Neural Network
+![Cannot Load Gif](./doc/badTrial.gif)
+
+Initially, the neural network is untrained and makes completely random action
+choices, as seen here. The controlled (green) units make random decissions and
+are quickly eliminated by the hostile (red) units.
+Note: The friendly units are initally instructed to move toward the hostile units
+in order to engage them in combat and pursuit.
+
+#### Final Neural Network
+![Cannot Load Gif](./doc/goodTrial.gif)
+
+Eventually, the neural network is trained through iterative generations via our
+genetic algorithm.  While far from optimal, the resulting top individual (neural
+network) in the final generation survives longer as it has learned to evade the
+hostile enemy units.
+
+
 ## Setup 
 Reference documentation on setting up the DeepMind PySC2 environment here: https://github.com/deepmind/pysc2
 
-The RunAwAI agent can be run by: 
+
+The RunAwAI agent can be run by entering the following directory:
+```
+/pysc2/agents
+```
+
+And executing either one of the follow commands:
+```
+./start.sh
+```
+Or:
 ```
  python -m pysc2.bin.agent --map DefeatRoaches --agent pysc2.agents.RunAwAI_Agent.RunAwAI
 ```
